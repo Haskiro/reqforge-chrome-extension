@@ -32,3 +32,19 @@ export type TrafficEntry = {
   body?: string;
   statusCode?: number;
 };
+
+export type StoredEntry = {
+  id: string;
+  timestamp: number;
+  method: string;
+  url: string;
+  requestHeaders: Record<string, string>;
+  requestBody?: string;
+  /** pending = held waiting for send; sent = in-flight; response_pending = response held for edit; complete = delivered to page */
+  status: 'pending' | 'sent' | 'response_pending' | 'complete';
+  /** Tab that made the request — needed to route PROCEED back to the right page */
+  tabId?: number;
+  responseStatus?: number;
+  responseHeaders?: Record<string, string>;
+  responseBody?: string;
+};
