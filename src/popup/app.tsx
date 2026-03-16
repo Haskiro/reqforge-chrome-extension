@@ -1,7 +1,6 @@
+import { ChooseAuthPage } from '@pages/choose-auth-page';
+import { RulesPage } from '@pages/rules-page';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
-
-import { ChooseAuthPage } from './pages/choose-auth-page';
-import { RulesPage } from './pages/rules-page';
 
 export function App() {
   return (
