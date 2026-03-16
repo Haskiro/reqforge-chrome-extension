@@ -2,6 +2,7 @@ import { crx, defineManifest } from '@crxjs/vite-plugin';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
+import svgr from 'vite-plugin-svgr';
 
 const manifest = defineManifest({
   manifest_version: 3,
@@ -15,9 +16,18 @@ const manifest = defineManifest({
 });
 
 export default defineConfig({
-  plugins: [react(), crx({ manifest })],
+  plugins: [svgr(), react(), crx({ manifest })],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src/popup'),
+      '@components': resolve(__dirname, 'src/popup/components'),
+      '@pages': resolve(__dirname, 'src/popup/pages'),
+      '@assets': resolve(__dirname, 'src/popup/assets'),
+      '@shared': resolve(__dirname, 'src/shared'),
+    },
+  },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       // popup.html is no longer in the manifest, add it explicitly so CRXJS still bundles it
       input: { popup: resolve(__dirname, 'popup.html') },
     },

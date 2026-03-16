@@ -1,0 +1,12 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 22px;
+  color: #000;
+}
