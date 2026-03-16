@@ -1,12 +1,212 @@
 .page {
-  min-height: 100vh;
-  background: #f5f5f5;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.appBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: 64px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.appBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background: #d9d9d9;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.navItem {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.88);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.navItem:hover {
+  color: #1677ff;
+}
+
+.navItemActive {
+  color: #1677ff;
+}
+
+.appBarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: #ffd6e7;
+  color: #eb2f96;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.placeholder {
-  color: #8c8c8c;
+/* Content */
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  height: 100%;
+}
+
+.content :global(.ant-splitter) {
+  height: 100%;
+}
+
+/* Left panel */
+.leftPanel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modeTabs {
+  flex-shrink: 0;
+  padding: 0 14px;
+}
+
+.modeTabs :global(.ant-tabs-nav) {
+  margin-bottom: 0;
+}
+
+.collapseWrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.collapseWrapper :global(.ant-collapse) {
+  border-radius: 8px;
+}
+
+/* Group label in collapse header */
+.groupLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupName {
   font-size: 14px;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+/* Actions (edit/delete buttons) */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Rule rows inside collapse */
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ruleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.ruleRow:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.ruleRowSelected {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+.ruleDash {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  width: 8px;
+  flex-shrink: 0;
+}
+
+.ruleName {
+  flex: 1;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.88);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ruleName:hover {
+  color: #1677ff;
+}
+
+.emptyGroup {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+/* Right panel */
+.rightPanel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+  border-left: 1px solid #f0f0f0;
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+  flex-shrink: 0;
+}
+
+.form {
+  flex: 1;
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: 12px;
+}
+
+.formFooter {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
