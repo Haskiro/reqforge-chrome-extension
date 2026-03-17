@@ -1,4 +1,5 @@
-import type { StoredEntry } from '../popup/types';
+import type { StoredEntry } from '@/types';
+
 import type { PopupToWorker } from '../shared/messages';
 
 // ── Window management ─────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ chrome.action.onClicked.addListener(() => {
       url: chrome.runtime.getURL('popup.html'),
       type: 'popup',
       width: 840,
-      height: 600,
+      height: 650,
       focused: true,
     });
     popupWindowId = win?.id;

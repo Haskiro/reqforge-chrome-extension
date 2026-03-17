@@ -11,6 +11,17 @@ export type Group = {
   name: string;
 };
 
+export type ModificationType = 'ADD_HEADER' | 'REPLACE_BODY' | 'REPLACE_URL' | 'REPLACE_STATUS';
+
+export type RuleModification = {
+  id: string;
+  type: ModificationType;
+  name: string | null;
+  value: string;
+};
+
+export type RuleDirection = 'REQUEST' | 'RESPONSE' | 'ANY';
+
 export type Rule = {
   id: string;
   name: string;
@@ -20,6 +31,8 @@ export type Rule = {
   groupId: string;
   enabled: boolean;
   mode: RuleMode;
+  direction: RuleDirection;
+  modifications: RuleModification[];
 };
 
 export type TrafficEntry = {

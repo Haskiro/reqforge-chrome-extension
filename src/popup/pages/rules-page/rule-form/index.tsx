@@ -1,17 +1,21 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { AutoComplete, Button, Form, Input, Select, Typography } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '../../../store';
+import { useAppDispatch, useAppSelector } from '@/store';
 import {
   addGroup,
   addRule,
+  DEFAULT_BACKGROUND_GROUP_ID,
   DEFAULT_GROUP_ID,
   RULE_TYPES,
   setSelectedRuleId,
   updateRule,
-} from '../../../store/rulesSlice';
+} from '@/store/rulesSlice';
+import type { RuleDirection, RuleModification } from '@/types';
+
 import styles from '../rules-page.module.css';
+import { ModificationsModal } from './modifications-modal';
 
 const HTTP_METHODS = [
   { value: 'ANY', label: 'Любой' },
@@ -22,20 +26,47 @@ const HTTP_METHODS = [
   { value: 'PATCH', label: 'PATCH' },
 ];
 
+const DIRECTION_OPTIONS_STOPPING: { value: RuleDirection; label: string }[] = [
+  { value: 'ANY', label: 'Любое' },
+  { value: 'REQUEST', label: 'Запрос' },
+  { value: 'RESPONSE', label: 'Ответ' },
+];
+
+const DIRECTION_OPTIONS_BACKGROUND: { value: Exclude<RuleDirection, 'ANY'>; label: string }[] = [
+  { value: 'REQUEST', label: 'Запрос' },
+  { value: 'RESPONSE', label: 'Ответ' },
+];
+
 type RuleFormValues = {
   groupName: string;
   name: string;
   method: string[];
   ruleTypeId: number;
   value: string;
+  direction: RuleDirection;
 };
 
 export const RuleForm = () => {
   const dispatch = useAppDispatch();
-  const { rules, groups, selectedRuleId, activeMode } = useAppSelector((s) => s.rules);
+  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } = useAppSelector(
+    (s) => s.rules,
+  );
+  const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [form] = Form.useForm<RuleFormValues>();
+  const [modifications, setModifications] = useState<RuleModification[]>([]);
+  const direction = Form.useWatch('direction', form) as RuleDirection | undefined;
+  const [modsError, setModsError] = useState(false);
+  const [modsModalOpen, setModsModalOpen] = useState(false);
 
   const selectedRule = rules.find((r) => r.id === selectedRuleId) ?? null;
+
+  const [prevSelectedRuleId, setPrevSelectedRuleId] = useState(selectedRuleId);
+  if (selectedRuleId !== prevSelectedRuleId) {
+    setPrevSelectedRuleId(selectedRuleId);
+    setModifications(selectedRule?.modifications ?? []);
+    setModsError(false);
+    setModsModalOpen(false);
+  }
 
   useEffect(() => {
     if (selectedRule) {
@@ -43,10 +74,16 @@ export const RuleForm = () => {
       form.setFieldsValue({ ...selectedRule, groupName: group?.name ?? '' });
     } else {
       form.resetFields();
+      form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
     }
-  }, [selectedRuleId, selectedRule, form, groups]);
+  }, [selectedRuleId, selectedRule, form, groups, activeMode]);
 
   const handleSave = (values: RuleFormValues) => {
+    if (activeMode === 'background' && modifications.length === 0) {
+      setModsError(true);
+      return;
+    }
+
     const trimmedName = values.groupName?.trim();
     const existingGroup = groups.find((g) => g.name === trimmedName);
     let groupId = existingGroup?.id;
@@ -55,25 +92,30 @@ export const RuleForm = () => {
         groupId = crypto.randomUUID();
         dispatch(addGroup({ id: groupId, name: trimmedName }));
       } else {
-        groupId = DEFAULT_GROUP_ID;
+        groupId = activeMode === 'interactive' ? DEFAULT_GROUP_ID : DEFAULT_BACKGROUND_GROUP_ID;
       }
     }
 
     if (selectedRule) {
-      dispatch(updateRule({ ...selectedRule, ...values, groupId }));
+      dispatch(updateRule({ ...selectedRule, ...values, groupId, modifications }));
     } else {
-      dispatch(addRule({ ...values, groupId, enabled: true, mode: activeMode }));
+      dispatch(addRule({ ...values, groupId, enabled: true, mode: activeMode, modifications }));
     }
     dispatch(setSelectedRuleId(null));
     form.resetFields();
+    setModifications([]);
+    setModsError(false);
+    setModsModalOpen(false);
   };
 
   const handleClear = () => {
-    if (selectedRule) {
-      form.resetFields();
-    } else {
+    form.resetFields();
+    form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
+    setModifications([]);
+    setModsError(false);
+    setModsModalOpen(false);
+    if (!selectedRule) {
       dispatch(setSelectedRuleId(null));
-      form.resetFields();
     }
   };
 
@@ -93,6 +135,10 @@ export const RuleForm = () => {
           onClick={() => {
             dispatch(setSelectedRuleId(null));
             form.resetFields();
+            form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
+            setModifications([]);
+            setModsError(false);
+            setModsModalOpen(false);
           }}
         />
       </div>
@@ -140,6 +186,49 @@ export const RuleForm = () => {
         >
           <Input placeholder="www.example.com/api" />
         </Form.Item>
+
+        <Form.Item
+          label="Направление"
+          name="direction"
+          rules={[{ required: true, message: 'Выберите направление' }]}
+        >
+          <Select
+            options={
+              activeMode === 'interactive'
+                ? DIRECTION_OPTIONS_STOPPING
+                : DIRECTION_OPTIONS_BACKGROUND
+            }
+          />
+        </Form.Item>
+
+        {activeMode === 'background' && (
+          <>
+            {modsError && (
+              <Typography.Text type="danger" style={{ display: 'block', marginBottom: 8 }}>
+                Добавьте хотя бы одну модификацию
+              </Typography.Text>
+            )}
+            <Form.Item label="Модификации">
+              <Button onClick={() => setModsModalOpen(true)} danger={modsError}>
+                {modifications.length === 0
+                  ? 'Настроить модификации'
+                  : `Модификации (${modifications.length})`}
+              </Button>
+            </Form.Item>
+            <ModificationsModal
+              open={modsModalOpen}
+              value={modifications}
+              direction={direction ?? 'REQUEST'}
+              showErrors={modsError}
+              onSave={(mods) => {
+                setModifications(mods);
+                setModsError(false);
+                setModsModalOpen(false);
+              }}
+              onCancel={() => setModsModalOpen(false)}
+            />
+          </>
+        )}
 
         <div className={styles.formFooter}>
           <Button type="primary" htmlType="submit">
