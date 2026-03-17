@@ -1,11 +1,11 @@
-import type { Group, Rule, RuleMode } from '../types';
+import type { Group, Rule } from '@/types';
 
 const STORAGE_KEY = 'rulesState';
 
 export type PersistedRulesState = {
   rules: Rule[];
-  groups: Group[];
-  activeMode: RuleMode;
+  interactiveGroups: Group[];
+  backgroundGroups: Group[];
 };
 
 export async function loadPersistedRules(): Promise<PersistedRulesState | null> {

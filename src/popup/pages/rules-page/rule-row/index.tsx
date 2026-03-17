@@ -1,7 +1,8 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Switch } from 'antd';
 
-import type { Rule } from '../../../types';
+import type { Rule } from '@/types';
+
 import styles from '../rules-page.module.css';
 
 type RuleRowProps = {

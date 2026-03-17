@@ -1,10 +1,11 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { loadPersistedRules } from '../services/rulesStorage';
-import type { Group, Rule, RuleMode } from '../types';
+import { loadPersistedRules } from '@/services/rulesStorage';
+import type { Group, Rule, RuleMode } from '@/types';
 
 export const DEFAULT_GROUP_ID = 'default';
+export const DEFAULT_BACKGROUND_GROUP_ID = 'default-background';
 
 const RULE_TYPES = [
   { id: 1, value: 'contains' as const, name: 'Содержит' },
@@ -20,14 +21,16 @@ export const loadRulesFromStorage = createAsyncThunk('rules/loadFromStorage', as
 
 interface RulesState {
   rules: Rule[];
-  groups: Group[];
+  interactiveGroups: Group[];
+  backgroundGroups: Group[];
   selectedRuleId: string | null;
   activeMode: RuleMode;
   loaded: boolean;
 }
 
 const initialState: RulesState = {
-  groups: [{ id: DEFAULT_GROUP_ID, name: 'Группа по умолчанию' }],
+  interactiveGroups: [{ id: DEFAULT_GROUP_ID, name: 'Группа по умолчанию' }],
+  backgroundGroups: [{ id: DEFAULT_BACKGROUND_GROUP_ID, name: 'Группа по умолчанию' }],
   rules: [],
   selectedRuleId: null,
   activeMode: 'interactive',
@@ -55,11 +58,14 @@ const rulesSlice = createSlice({
       if (rule) rule.enabled = !rule.enabled;
     },
     addGroup(state, action: PayloadAction<Group>) {
-      state.groups.push(action.payload);
+      const arr =
+        state.activeMode === 'interactive' ? state.interactiveGroups : state.backgroundGroups;
+      arr.push(action.payload);
     },
     deleteGroup(state, action: PayloadAction<{ id: string; moveToGroupId?: string }>) {
       const { id, moveToGroupId } = action.payload;
-      state.groups = state.groups.filter((g) => g.id !== id);
+      state.interactiveGroups = state.interactiveGroups.filter((g) => g.id !== id);
+      state.backgroundGroups = state.backgroundGroups.filter((g) => g.id !== id);
       if (moveToGroupId) {
         state.rules.forEach((r) => {
           if (r.groupId === id) r.groupId = moveToGroupId;
@@ -69,7 +75,9 @@ const rulesSlice = createSlice({
       }
     },
     renameGroup(state, action: PayloadAction<{ id: string; name: string }>) {
-      const group = state.groups.find((g) => g.id === action.payload.id);
+      const group =
+        state.interactiveGroups.find((g) => g.id === action.payload.id) ??
+        state.backgroundGroups.find((g) => g.id === action.payload.id);
       if (group) group.name = action.payload.name;
     },
     setSelectedRuleId(state, action: PayloadAction<string | null>) {
@@ -83,9 +91,17 @@ const rulesSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(loadRulesFromStorage.fulfilled, (state, action) => {
       if (action.payload) {
-        state.rules = action.payload.rules;
-        state.groups = action.payload.groups;
-        state.activeMode = action.payload.activeMode;
+        state.rules = action.payload.rules.map((r) => ({
+          modifications: [],
+          direction: 'ANY' as const,
+          ...r,
+        }));
+        state.interactiveGroups = action.payload.interactiveGroups ?? [
+          { id: DEFAULT_GROUP_ID, name: 'Группа по умолчанию' },
+        ];
+        state.backgroundGroups = action.payload.backgroundGroups ?? [
+          { id: DEFAULT_BACKGROUND_GROUP_ID, name: 'Группа по умолчанию' },
+        ];
       }
       state.loaded = true;
     });

@@ -1,7 +1,7 @@
 import { Form, Modal, Select, Typography } from 'antd';
 import { useState } from 'react';
 
-import type { Group } from '../../../types';
+import type { Group } from '@/types';
 
 type DeleteGroupModalProps = {
   open: boolean;

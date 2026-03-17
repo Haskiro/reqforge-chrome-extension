@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
+  DEFAULT_BACKGROUND_GROUP_ID,
   DEFAULT_GROUP_ID,
   deleteGroup,
   deleteRule,
@@ -27,7 +28,10 @@ const MODE_TABS = [
 
 export const RulesList = () => {
   const dispatch = useAppDispatch();
-  const { rules, groups, selectedRuleId, activeMode } = useAppSelector((s) => s.rules);
+  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } = useAppSelector(
+    (s) => s.rules,
+  );
+  const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
@@ -62,7 +66,7 @@ export const RulesList = () => {
         </div>
       ),
       extra:
-        group.id !== DEFAULT_GROUP_ID ? (
+        group.id !== DEFAULT_GROUP_ID && group.id !== DEFAULT_BACKGROUND_GROUP_ID ? (
           <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
             <Button
               color="primary"

@@ -1,0 +1,54 @@
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Typography } from 'antd';
+
+import type { RuleModification } from '@/types';
+
+import { ModificationRow } from '../modification-row';
+import styles from './modifications-list.module.css';
+
+export type ModificationsListProps = {
+  value: RuleModification[];
+  onChange: (mods: RuleModification[]) => void;
+  error?: boolean;
+};
+
+export const ModificationsList = ({ value, onChange, error }: ModificationsListProps) => {
+  const handleAdd = () => {
+    onChange([...value, { id: crypto.randomUUID(), type: 'ADD_HEADER', name: '', value: '' }]);
+  };
+
+  const handleChange = (index: number, updated: RuleModification) => {
+    const next = [...value];
+    next[index] = updated;
+    onChange(next);
+  };
+
+  const handleDelete = (index: number) => {
+    onChange(value.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className={styles.container}>
+      <Typography.Text strong>Модификации</Typography.Text>
+      {error && value.length === 0 && (
+        <Typography.Text type="danger" className={styles.error}>
+          Добавьте хотя бы одну модификацию
+        </Typography.Text>
+      )}
+      <div className={styles.list}>
+        {value.map((mod, index) => (
+          <ModificationRow
+            key={mod.id}
+            modification={mod}
+            showErrors={error ?? false}
+            onChange={(updated) => handleChange(index, updated)}
+            onDelete={() => handleDelete(index)}
+          />
+        ))}
+      </div>
+      <Button icon={<PlusOutlined />} onClick={handleAdd}>
+        Добавить модификацию
+      </Button>
+    </div>
+  );
+};

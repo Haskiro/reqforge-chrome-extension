@@ -3,8 +3,9 @@ import { AppLogo } from '@components/app-logo';
 import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { useAppDispatch } from '../../store';
-import { saveAuthMode } from '../../store/authSlice';
+import { useAppDispatch } from '@/store';
+import { saveAuthMode } from '@/store/authSlice';
+
 import styles from './choose-auth-page.module.css';
 
 export const ChooseAuthPage = () => {
