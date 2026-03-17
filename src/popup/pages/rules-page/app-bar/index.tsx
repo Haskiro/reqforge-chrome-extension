@@ -1,10 +1,9 @@
-import { ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import styles from '../rules-page.module.css';
 
-export function AppBar() {
+export const AppBar = () => {
   const navigate = useNavigate();
 
   return (
@@ -22,14 +21,12 @@ export function AppBar() {
         </nav>
       </div>
       <div className={styles.appBarRight}>
-        <Button type="primary" size="small" icon={<ImportOutlined />}>
+        <Button type="primary" size="small">
           Импорт
         </Button>
-        <Button size="small" icon={<ExportOutlined />}>
-          Экспорт
-        </Button>
+        <Button size="small">Экспорт</Button>
         <div className={styles.avatar}>П</div>
       </div>
     </div>
   );
-}
+};

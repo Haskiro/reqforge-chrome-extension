@@ -1,16 +1,22 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { CollapseProps } from 'antd';
 import { Button, Collapse, Switch, Tabs } from 'antd';
+import { useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '../../../store';
+import { useAppDispatch, useAppSelector } from '@/store';
 import {
+  DEFAULT_GROUP_ID,
   deleteGroup,
   deleteRule,
+  renameGroup,
   setActiveMode,
   setSelectedRuleId,
   toggleRule,
-} from '../../../store/rulesSlice';
-import type { RuleMode } from '../../../types';
+} from '@/store/rulesSlice.ts';
+import type { Group, RuleMode } from '@/types';
+
+import { DeleteGroupModal } from '../delete-group-modal';
+import { EditGroupModal } from '../edit-group-modal';
 import { RuleRow } from '../rule-row';
 import styles from '../rules-page.module.css';
 
@@ -19,11 +25,19 @@ const MODE_TABS = [
   { key: 'background', label: 'Фоновые' },
 ];
 
-export function RulesList() {
+export const RulesList = () => {
   const dispatch = useAppDispatch();
   const { rules, groups, selectedRuleId, activeMode } = useAppSelector((s) => s.rules);
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   const filteredRules = rules.filter((r) => r.mode === activeMode);
+
+  const handleDeleteConfirm = (moveToGroupId?: string) => {
+    if (!deletingGroup) return;
+    dispatch(deleteGroup({ id: deletingGroup.id, moveToGroupId }));
+    setDeletingGroup(null);
+  };
 
   const collapseItems: CollapseProps['items'] = groups.map((group) => {
     const groupRules = filteredRules.filter((r) => r.groupId === group.id);
@@ -47,24 +61,26 @@ export function RulesList() {
           <span className={styles.groupName}>{group.name}</span>
         </div>
       ),
-      extra: (
-        <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
-          <Button
-            type="primary"
-            shape="circle"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => dispatch(setSelectedRuleId(null))}
-          />
-          <Button
-            danger
-            shape="circle"
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => dispatch(deleteGroup(group.id))}
-          />
-        </div>
-      ),
+      extra:
+        group.id !== DEFAULT_GROUP_ID ? (
+          <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+            <Button
+              color="primary"
+              shape="circle"
+              size="small"
+              variant="outlined"
+              icon={<EditOutlined />}
+              onClick={() => setEditingGroup(group)}
+            />
+            <Button
+              danger
+              shape="circle"
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => setDeletingGroup(group)}
+            />
+          </div>
+        ) : null,
       children:
         groupRules.length === 0 ? (
           <div className={styles.emptyGroup}>Нет правил в этой группе</div>
@@ -96,6 +112,24 @@ export function RulesList() {
       <div className={styles.collapseWrapper}>
         <Collapse items={collapseItems} defaultActiveKey={groups.map((g) => g.id)} bordered />
       </div>
+
+      <DeleteGroupModal
+        open={deletingGroup !== null}
+        group={deletingGroup}
+        otherGroups={groups.filter((g) => g.id !== deletingGroup?.id)}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeletingGroup(null)}
+      />
+
+      <EditGroupModal
+        open={editingGroup !== null}
+        group={editingGroup}
+        onConfirm={(name) => {
+          if (editingGroup) dispatch(renameGroup({ id: editingGroup.id, name }));
+          setEditingGroup(null);
+        }}
+        onCancel={() => setEditingGroup(null)}
+      />
     </div>
   );
-}
+};

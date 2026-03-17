@@ -1,58 +1,83 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Select, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import { AutoComplete, Button, Form, Input, Select, Typography } from 'antd';
+import { useEffect } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../store';
 import {
   addGroup,
   addRule,
+  DEFAULT_GROUP_ID,
   RULE_TYPES,
   setSelectedRuleId,
   updateRule,
 } from '../../../store/rulesSlice';
-import { AddGroupModal } from '../add-group-modal';
 import styles from '../rules-page.module.css';
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
+const HTTP_METHODS = [
+  { value: 'ANY', label: 'Любой' },
+  { value: 'GET', label: 'GET' },
+  { value: 'POST', label: 'POST' },
+  { value: 'PUT', label: 'PUT' },
+  { value: 'DELETE', label: 'DELETE' },
+  { value: 'PATCH', label: 'PATCH' },
+];
 
 type RuleFormValues = {
-  groupId: string;
+  groupName: string;
   name: string;
   method: string[];
   ruleTypeId: number;
   value: string;
 };
 
-export function RuleForm() {
+export const RuleForm = () => {
   const dispatch = useAppDispatch();
   const { rules, groups, selectedRuleId, activeMode } = useAppSelector((s) => s.rules);
   const [form] = Form.useForm<RuleFormValues>();
-  const [modalOpen, setModalOpen] = useState(false);
 
   const selectedRule = rules.find((r) => r.id === selectedRuleId) ?? null;
 
   useEffect(() => {
     if (selectedRule) {
-      form.setFieldsValue(selectedRule);
+      const group = groups.find((g) => g.id === selectedRule.groupId);
+      form.setFieldsValue({ ...selectedRule, groupName: group?.name ?? '' });
     } else {
       form.resetFields();
     }
-  }, [selectedRuleId, selectedRule, form]);
+  }, [selectedRuleId, selectedRule, form, groups]);
 
-  function handleSave(values: RuleFormValues) {
+  const handleSave = (values: RuleFormValues) => {
+    const trimmedName = values.groupName?.trim();
+    const existingGroup = groups.find((g) => g.name === trimmedName);
+    let groupId = existingGroup?.id;
+    if (!groupId) {
+      if (trimmedName) {
+        groupId = crypto.randomUUID();
+        dispatch(addGroup({ id: groupId, name: trimmedName }));
+      } else {
+        groupId = DEFAULT_GROUP_ID;
+      }
+    }
+
     if (selectedRule) {
-      dispatch(updateRule({ ...selectedRule, ...values }));
+      dispatch(updateRule({ ...selectedRule, ...values, groupId }));
     } else {
-      dispatch(addRule({ ...values, enabled: true, mode: activeMode }));
+      dispatch(addRule({ ...values, groupId, enabled: true, mode: activeMode }));
     }
     dispatch(setSelectedRuleId(null));
     form.resetFields();
-  }
+  };
 
-  function handleClear() {
-    dispatch(setSelectedRuleId(null));
-    form.resetFields();
-  }
+  const handleClear = () => {
+    if (selectedRule) {
+      form.resetFields();
+    } else {
+      dispatch(setSelectedRuleId(null));
+      form.resetFields();
+    }
+  };
+
+  const groupOptions = groups.map((g) => ({ value: g.name }));
 
   return (
     <div className={styles.rightPanel}>
@@ -65,19 +90,20 @@ export function RuleForm() {
           shape="circle"
           icon={<PlusOutlined />}
           style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            dispatch(setSelectedRuleId(null));
+            form.resetFields();
+          }}
         />
       </div>
 
       <Form form={form} layout="vertical" onFinish={handleSave} className={styles.form}>
-        <Form.Item label="Группа" name="groupId" initialValue="default">
-          <Select>
-            {groups.map((g) => (
-              <Select.Option key={g.id} value={g.id}>
-                {g.name}
-              </Select.Option>
-            ))}
-          </Select>
+        <Form.Item
+          label="Группа"
+          name="groupName"
+          tooltip="Если группа не существует — она будет создана автоматически. Если оставить пустым — правило попадёт в группу по умолчанию"
+        >
+          <AutoComplete options={groupOptions} placeholder="Выберите или введите группу" />
         </Form.Item>
 
         <Form.Item
@@ -93,13 +119,7 @@ export function RuleForm() {
           name="method"
           rules={[{ required: true, message: 'Выберите метод' }]}
         >
-          <Select mode="multiple" placeholder="Выберите методы">
-            {HTTP_METHODS.map((m) => (
-              <Select.Option key={m} value={m}>
-                {m}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select mode="multiple" placeholder="Выберите методы" options={HTTP_METHODS} />
         </Form.Item>
 
         <Form.Item
@@ -107,13 +127,10 @@ export function RuleForm() {
           name="ruleTypeId"
           rules={[{ required: true, message: 'Выберите тип' }]}
         >
-          <Select placeholder="Тип сравнения">
-            {RULE_TYPES.map((rt) => (
-              <Select.Option key={rt.id} value={rt.id}>
-                {rt.name}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            placeholder="Тип сравнения"
+            options={RULE_TYPES.map((rt) => ({ value: rt.id, label: rt.name }))}
+          />
         </Form.Item>
 
         <Form.Item
@@ -131,12 +148,6 @@ export function RuleForm() {
           <Button onClick={handleClear}>Очистить</Button>
         </div>
       </Form>
-
-      <AddGroupModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onAdd={(name) => dispatch(addGroup(name))}
-      />
     </div>
   );
-}
+};

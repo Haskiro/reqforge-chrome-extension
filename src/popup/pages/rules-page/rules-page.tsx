@@ -5,7 +5,7 @@ import { RuleForm } from './rule-form';
 import { RulesList } from './rules-list';
 import styles from './rules-page.module.css';
 
-export function RulesPage() {
+export const RulesPage = () => {
   return (
     <div className={styles.page}>
       <AppBar />
@@ -21,4 +21,4 @@ export function RulesPage() {
       </div>
     </div>
   );
-}
+};
