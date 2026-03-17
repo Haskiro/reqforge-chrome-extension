@@ -7,19 +7,19 @@ type AddGroupModalProps = {
   onAdd: (name: string) => void;
 };
 
-export function AddGroupModal({ open, onClose, onAdd }: AddGroupModalProps) {
+export const AddGroupModal = ({ open, onClose, onAdd }: AddGroupModalProps) => {
   const [name, setName] = useState('');
 
-  function handleOk() {
+  const handleOk = () => {
     if (name.trim()) onAdd(name.trim());
     setName('');
     onClose();
-  }
+  };
 
-  function handleCancel() {
+  const handleCancel = () => {
     setName('');
     onClose();
-  }
+  };
 
   return (
     <Modal
@@ -38,4 +38,4 @@ export function AddGroupModal({ open, onClose, onAdd }: AddGroupModalProps) {
       />
     </Modal>
   );
-}
+};

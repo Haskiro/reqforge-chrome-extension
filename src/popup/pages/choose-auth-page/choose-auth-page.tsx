@@ -3,10 +3,18 @@ import { AppLogo } from '@components/app-logo';
 import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
+import { useAppDispatch } from '../../store';
+import { saveAuthMode } from '../../store/authSlice';
 import styles from './choose-auth-page.module.css';
 
-export function ChooseAuthPage() {
+export const ChooseAuthPage = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const handleSkip = async () => {
+    await dispatch(saveAuthMode('guest'));
+    void navigate('/rules');
+  };
 
   return (
     <div className={styles.page}>
@@ -18,7 +26,7 @@ export function ChooseAuthPage() {
             color="primary"
             icon={<ArrowRightOutlined />}
             iconPlacement="end"
-            onClick={() => void navigate('/rules')}
+            onClick={() => void handleSkip()}
           >
             Пропустить
           </Button>
@@ -35,4 +43,4 @@ export function ChooseAuthPage() {
       </div>
     </div>
   );
-}
+};

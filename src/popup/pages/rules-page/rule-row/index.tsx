@@ -12,7 +12,7 @@ type RuleRowProps = {
   onToggle: () => void;
 };
 
-export function RuleRow({ rule, selected, onEdit, onDelete, onToggle }: RuleRowProps) {
+export const RuleRow = ({ rule, selected, onEdit, onDelete, onToggle }: RuleRowProps) => {
   return (
     <div className={`${styles.ruleRow} ${selected ? styles.ruleRowSelected : ''}`}>
       <span className={styles.ruleDash}>–</span>
@@ -22,9 +22,10 @@ export function RuleRow({ rule, selected, onEdit, onDelete, onToggle }: RuleRowP
       </span>
       <div className={styles.actions}>
         <Button
-          type="primary"
+          color="primary"
           shape="circle"
           size="small"
+          variant="outlined"
           icon={<EditOutlined />}
           onClick={onEdit}
         />
@@ -32,4 +33,4 @@ export function RuleRow({ rule, selected, onEdit, onDelete, onToggle }: RuleRowP
       </div>
     </div>
   );
-}
+};
