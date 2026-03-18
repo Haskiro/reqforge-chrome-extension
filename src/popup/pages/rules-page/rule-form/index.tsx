@@ -48,9 +48,14 @@ type RuleFormValues = {
 
 export const RuleForm = () => {
   const dispatch = useAppDispatch();
-  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } = useAppSelector(
-    (s) => s.rules,
-  );
+  const {
+    rules,
+    interactiveGroups,
+    backgroundGroups,
+    selectedRuleId,
+    selectionVersion,
+    activeMode,
+  } = useAppSelector((s) => s.rules);
   const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [form] = Form.useForm<RuleFormValues>();
   const [modifications, setModifications] = useState<RuleModification[]>([]);
@@ -60,9 +65,9 @@ export const RuleForm = () => {
 
   const selectedRule = rules.find((r) => r.id === selectedRuleId) ?? null;
 
-  const [prevSelectedRuleId, setPrevSelectedRuleId] = useState(selectedRuleId);
-  if (selectedRuleId !== prevSelectedRuleId) {
-    setPrevSelectedRuleId(selectedRuleId);
+  const [prevSelectionVersion, setPrevSelectionVersion] = useState(selectionVersion);
+  if (selectionVersion !== prevSelectionVersion) {
+    setPrevSelectionVersion(selectionVersion);
     setModifications(selectedRule?.modifications ?? []);
     setModsError(false);
     setModsModalOpen(false);
@@ -76,7 +81,8 @@ export const RuleForm = () => {
       form.resetFields();
       form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
     }
-  }, [selectedRuleId, selectedRule, form, groups, activeMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionVersion]);
 
   const handleSave = (values: RuleFormValues) => {
     if (activeMode === 'background' && modifications.length === 0) {
@@ -114,9 +120,6 @@ export const RuleForm = () => {
     setModifications([]);
     setModsError(false);
     setModsModalOpen(false);
-    if (!selectedRule) {
-      dispatch(setSelectedRuleId(null));
-    }
   };
 
   const groupOptions = groups.map((g) => ({ value: g.name }));

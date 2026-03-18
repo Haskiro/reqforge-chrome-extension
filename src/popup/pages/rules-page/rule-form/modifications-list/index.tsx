@@ -14,7 +14,10 @@ export type ModificationsListProps = {
 
 export const ModificationsList = ({ value, onChange, error }: ModificationsListProps) => {
   const handleAdd = () => {
-    onChange([...value, { id: crypto.randomUUID(), type: 'ADD_HEADER', name: '', value: '' }]);
+    onChange([
+      ...value,
+      { id: crypto.randomUUID(), type: 'ADD_HEADER', name: '', value: '', bodyLanguage: null },
+    ]);
   };
 
   const handleChange = (index: number, updated: RuleModification) => {
@@ -29,7 +32,6 @@ export const ModificationsList = ({ value, onChange, error }: ModificationsListP
 
   return (
     <div className={styles.container}>
-      <Typography.Text strong>Модификации</Typography.Text>
       {error && value.length === 0 && (
         <Typography.Text type="danger" className={styles.error}>
           Добавьте хотя бы одну модификацию

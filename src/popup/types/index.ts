@@ -13,11 +13,14 @@ export type Group = {
 
 export type ModificationType = 'ADD_HEADER' | 'REPLACE_BODY' | 'REPLACE_URL' | 'REPLACE_STATUS';
 
+export type BodyLanguage = 'json' | 'xml' | 'html' | 'javascript' | 'formdata';
+
 export type RuleModification = {
   id: string;
   type: ModificationType;
   name: string | null;
   value: string;
+  bodyLanguage: BodyLanguage | null;
 };
 
 export type RuleDirection = 'REQUEST' | 'RESPONSE' | 'ANY';
