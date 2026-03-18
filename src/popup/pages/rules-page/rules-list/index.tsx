@@ -114,7 +114,12 @@ export const RulesList = () => {
         className={styles.modeTabs}
       />
       <div className={styles.collapseWrapper}>
-        <Collapse items={collapseItems} defaultActiveKey={groups.map((g) => g.id)} bordered />
+        <Collapse
+          key={activeMode}
+          items={collapseItems}
+          defaultActiveKey={groups.map((g) => g.id)}
+          bordered
+        />
       </div>
 
       <DeleteGroupModal
