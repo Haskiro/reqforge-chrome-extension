@@ -1,4 +1,4 @@
-import { Splitter } from 'antd';
+import { Alert, Splitter } from 'antd';
 
 import { AppBar } from './app-bar';
 import { RuleForm } from './rule-form';
@@ -9,6 +9,11 @@ export const RulesPage = () => {
   return (
     <div className={styles.page}>
       <AppBar />
+      <Alert
+        banner
+        type="warning"
+        title="Если закрыть предупреждение Chrome об отладке — правила перестанут применяться. Чтобы снова включить перехват, переключите любое правило (выкл → вкл)."
+      />
       <div className={styles.content}>
         <Splitter>
           <Splitter.Panel defaultSize="60%" min="40%">

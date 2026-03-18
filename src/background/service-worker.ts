@@ -1,6 +1,7 @@
-import type { StoredEntry } from '@/types';
+import type { Rule, StoredEntry } from '@/types';
 
 import type { PopupToWorker } from '../shared/messages';
+import { findBackgroundMods, hasInteractiveMatch } from '../shared/ruleMatcher';
 
 // ── Window management ─────────────────────────────────────────────────────────
 
@@ -20,14 +21,14 @@ chrome.action.onClicked.addListener(() => {
       url: chrome.runtime.getURL('popup.html'),
       type: 'popup',
       width: 840,
-      height: 650,
+      height: 710,
       focused: true,
     });
     popupWindowId = win?.id;
     await chrome.storage.session.set({ popupWindowId: win?.id });
 
-    // Start intercepting when popup opens (if filter is already set)
-    if (filterUrl && targetTabId != null && !attachedTabs.has(targetTabId)) {
+    // Start intercepting when popup opens
+    if (shouldIntercept() && targetTabId != null && !attachedTabs.has(targetTabId)) {
       await tryAttachTab(targetTabId);
     }
   })();
@@ -48,7 +49,16 @@ async function onPopupClosed(): Promise<void> {
   }
   // Clear intercepted history
   await chrome.storage.local.set({ entries: [] });
-  console.log('[RF:sw] popup closed — detached all, cleared history');
+  // Disable all rules so they start inactive on next popup open
+  const stored = await chrome.storage.local.get('rulesState');
+  const rulesState = stored.rulesState as { rules: Rule[] } | null;
+  if (rulesState?.rules?.length) {
+    await chrome.storage.local.set({
+      rulesState: { ...rulesState, rules: rulesState.rules.map((r) => ({ ...r, enabled: false })) },
+    });
+  }
+  cachedRules = [];
+  console.log('[RF:sw] popup closed — detached all, cleared history, disabled all rules');
 }
 
 // ── CDP state ─────────────────────────────────────────────────────────────────
@@ -64,11 +74,14 @@ let filterUrl = '';
 // The single tab we're currently intercepting
 let targetTabId: number | undefined;
 
+let cachedRules: Rule[] = [];
+
 // ── Startup: restore state from storage ──────────────────────────────────────
 
 void (async () => {
-  const local = await chrome.storage.local.get('filterUrl');
+  const local = await chrome.storage.local.get(['filterUrl', 'rulesState']);
   filterUrl = (local.filterUrl as string) || '';
+  cachedRules = (local.rulesState as { rules: Rule[] } | null)?.rules ?? [];
 
   const session = await chrome.storage.session.get([
     'cdpMap',
@@ -103,7 +116,7 @@ void (async () => {
         if (t.tabId != null && t.attached) attachedTabs.add(t.tabId);
       }
       // Re-attach to target if needed
-      if (filterUrl && targetTabId != null && !attachedTabs.has(targetTabId)) {
+      if (shouldIntercept() && targetTabId != null && !attachedTabs.has(targetTabId)) {
         await tryAttachTab(targetTabId);
       }
     } catch {
@@ -161,8 +174,8 @@ chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
       targetTabId = tabId;
       await chrome.storage.session.set({ targetTabId });
 
-      // Only switch debugger if popup is open and filter is active
-      if (!filterUrl || popupWindowId == null) return;
+      // Only switch debugger if popup is open and there is something to intercept
+      if (!shouldIntercept() || popupWindowId == null) return;
 
       // Detach from the previous target tab
       if (prevTarget != null && prevTarget !== tabId && attachedTabs.has(prevTarget)) {
@@ -181,14 +194,35 @@ chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
 // ── Filter changes ────────────────────────────────────────────────────────────
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !changes.filterUrl) return;
+  if (area !== 'local') return;
+  if (changes.rulesState) {
+    cachedRules = (changes.rulesState.newValue as { rules: Rule[] } | null)?.rules ?? [];
+    if (popupWindowId != null) {
+      void (async () => {
+        if (shouldIntercept()) {
+          if (targetTabId != null && !attachedTabs.has(targetTabId)) {
+            await tryAttachTab(targetTabId);
+          } else {
+            for (const tabId of attachedTabs) {
+              try {
+                await enableFetch(tabId);
+              } catch (e) {
+                console.warn(`[RF:sw] enableFetch (rules update) failed for tab ${tabId}:`, e);
+              }
+            }
+          }
+        }
+      })();
+    }
+  }
+  if (!changes.filterUrl) return;
   filterUrl = (changes.filterUrl.newValue as string) || '';
 
   // Only act on filter changes while popup is open
   if (popupWindowId == null) return;
 
   void (async () => {
-    if (filterUrl) {
+    if (shouldIntercept()) {
       // Attach to target if not yet attached, otherwise just update patterns
       if (targetTabId != null) {
         if (!attachedTabs.has(targetTabId)) {
@@ -202,8 +236,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
         }
       }
     } else {
-      // Filter cleared — disable interception but KEEP debugger attached
-      // (re-attaching on next filter change would show the banner again)
+      // Nothing to intercept — disable Fetch but KEEP debugger attached
+      // (re-attaching on next change would show the banner again)
       for (const tabId of [...attachedTabs]) {
         try {
           await chrome.debugger.sendCommand({ tabId }, 'Fetch.disable', {});
@@ -280,13 +314,41 @@ async function tryDetachTab(tabId: number): Promise<void> {
   await cleanupTabMaps(tabId);
 }
 
+const hasEnabledBackgroundRules = (): boolean =>
+  cachedRules.some((r) => r.enabled && r.mode === 'background');
+
+const shouldIntercept = (): boolean => !!filterUrl || hasEnabledBackgroundRules();
+
+function ruleToGlobPattern(rule: Rule): string {
+  switch (rule.ruleTypeId) {
+    case 1:
+      return `*${escapeGlob(rule.value)}*`;
+    case 2:
+      return escapeGlob(rule.value);
+    default:
+      return '*';
+  }
+}
+
 async function enableFetch(tabId: number): Promise<void> {
-  const patterns = filterUrl
-    ? [
-        { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Request' },
-        { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Response' },
-      ]
-    : [];
+  const patterns: Array<{ urlPattern: string; requestStage: string }> = [];
+
+  if (filterUrl) {
+    patterns.push(
+      { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Request' },
+      { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Response' },
+    );
+  }
+
+  for (const rule of cachedRules) {
+    if (!rule.enabled || rule.mode !== 'background') continue;
+    const urlPattern = ruleToGlobPattern(rule);
+    const needsRequest = rule.direction === 'REQUEST' || rule.direction === 'ANY';
+    const needsResponse = rule.direction === 'RESPONSE' || rule.direction === 'ANY';
+    if (needsRequest) patterns.push({ urlPattern, requestStage: 'Request' });
+    if (needsResponse) patterns.push({ urlPattern, requestStage: 'Response' });
+  }
+
   await chrome.debugger.sendCommand({ tabId }, 'Fetch.enable', { patterns });
 }
 
@@ -318,7 +380,8 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
     void handleResponsePaused(
       tabId,
       p.requestId,
-      p.request,
+      p.request.url,
+      p.request.method,
       p.responseStatusCode,
       p.responseHeaders ?? [],
     );
@@ -332,6 +395,13 @@ async function handleRequestPaused(
   cdpRequestId: string,
   request: { url: string; method: string; headers: Record<string, string>; postData?: string },
 ): Promise<void> {
+  if (popupWindowId == null) {
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+      requestId: cdpRequestId,
+    });
+    return;
+  }
+
   // Auto-continue CORS preflight requests
   if (request.method === 'OPTIONS') {
     try {
@@ -340,6 +410,42 @@ async function handleRequestPaused(
       });
     } catch (e) {
       console.warn('[RF:sw] continueRequest (OPTIONS) failed:', e);
+    }
+    return;
+  }
+
+  // Background rules — apply modifications and continue without stopping
+  const bgRequestMods = findBackgroundMods(cachedRules, request.url, request.method, 'REQUEST');
+  if (bgRequestMods.length > 0) {
+    const headers = { ...request.headers };
+    let url: string | undefined;
+    let postData: string | undefined;
+    for (const mod of bgRequestMods) {
+      if (mod.type === 'ADD_HEADER' && mod.name) headers[mod.name] = mod.value;
+      if (mod.type === 'REPLACE_BODY') postData = mod.value;
+      if (mod.type === 'REPLACE_URL') url = mod.value;
+    }
+    try {
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+        requestId: cdpRequestId,
+        headers: Object.entries(headers).map(([name, value]) => ({ name, value })),
+        ...(url !== undefined && { url }),
+        ...(postData !== undefined && { postData: stringToBase64(postData) }),
+      });
+    } catch (e) {
+      console.warn('[RF:sw] continueRequest (background rule) failed:', e);
+    }
+    return;
+  }
+
+  // Interactive rules — auto-continue if no match
+  if (!hasInteractiveMatch(cachedRules, request.url, request.method, 'REQUEST')) {
+    try {
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+        requestId: cdpRequestId,
+      });
+    } catch (e) {
+      console.warn('[RF:sw] continueRequest (no match) failed:', e);
     }
     return;
   }
@@ -368,21 +474,101 @@ async function handleRequestPaused(
 async function handleResponsePaused(
   tabId: number,
   cdpRequestId: string,
-  request: { url: string },
+  url: string,
+  method: string,
   statusCode: number,
   responseHeaders: Array<{ name: string; value: string }>,
 ): Promise<void> {
+  if (popupWindowId == null) {
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+      requestId: cdpRequestId,
+    });
+    return;
+  }
+
   const cdpKey = `${tabId}:${cdpRequestId}`;
   const entryId = cdpKeyToEntry.get(cdpKey);
 
-  if (!entryId) {
+  // Background rules — apply modifications and fulfill without stopping
+  const bgResponseMods = findBackgroundMods(cachedRules, url, method, 'RESPONSE');
+  if (bgResponseMods.length > 0) {
+    const headers = headersArrayToObject(responseHeaders);
+    let body = '';
+    let finalStatus = statusCode;
+    const hasBodyReplace = bgResponseMods.some((m) => m.type === 'REPLACE_BODY');
+    if (!hasBodyReplace) {
+      try {
+        const r = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
+          requestId: cdpRequestId,
+        })) as { body: string; base64Encoded: boolean };
+        body = r.base64Encoded ? atob(r.body) : r.body;
+      } catch {
+        // keep empty
+      }
+    }
+    for (const mod of bgResponseMods) {
+      if (mod.type === 'ADD_HEADER' && mod.name) headers[mod.name] = mod.value;
+      if (mod.type === 'REPLACE_BODY') body = mod.value;
+      if (mod.type === 'REPLACE_STATUS') finalStatus = parseInt(mod.value, 10) || finalStatus;
+    }
     try {
-      await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.fulfillRequest', {
         requestId: cdpRequestId,
+        responseCode: finalStatus,
+        responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })),
+        body: stringToBase64(body),
       });
     } catch (e) {
-      console.warn('[RF:sw] continueResponse (untracked) failed:', e);
+      console.warn('[RF:sw] fulfillRequest (background rule) failed:', e);
     }
+    return;
+  }
+
+  // If no request-stage entry, check interactive rules for RESPONSE stage
+  if (!entryId) {
+    if (!hasInteractiveMatch(cachedRules, url, method, 'RESPONSE')) {
+      try {
+        await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+          requestId: cdpRequestId,
+        });
+      } catch (e) {
+        console.warn('[RF:sw] continueResponse (untracked) failed:', e);
+      }
+      return;
+    }
+
+    // Create a new entry for response-only interactive match
+    const id = crypto.randomUUID();
+    cdpKeyToEntry.set(cdpKey, id);
+    entryToCdp.set(id, { tabId, cdpRequestId });
+    await saveCdpMaps();
+
+    let responseBody: string | undefined;
+    try {
+      const bodyResult = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
+        requestId: cdpRequestId,
+      })) as { body: string; base64Encoded: boolean };
+      responseBody = bodyResult.base64Encoded ? atob(bodyResult.body) : bodyResult.body;
+    } catch (e) {
+      console.warn(`[RF:sw] getResponseBody failed for new entry ${id}:`, e);
+    }
+
+    const entry: StoredEntry = {
+      id,
+      timestamp: Date.now(),
+      method,
+      url,
+      requestHeaders: {},
+      status: 'response_pending',
+      responseStatus: statusCode,
+      responseHeaders: headersArrayToObject(responseHeaders),
+      responseBody,
+      tabId,
+    };
+    await upsertEntry(entry);
+    console.log(
+      `[RF:sw] response-only entry created tab=${tabId} entryId=${id} status=${statusCode} url=${url}`,
+    );
     return;
   }
 
@@ -403,7 +589,7 @@ async function handleResponsePaused(
     responseBody,
   });
   console.log(
-    `[RF:sw] response paused tab=${tabId} entryId=${entryId} status=${statusCode} url=${request.url}`,
+    `[RF:sw] response paused tab=${tabId} entryId=${entryId} status=${statusCode} url=${url}`,
   );
 }
 

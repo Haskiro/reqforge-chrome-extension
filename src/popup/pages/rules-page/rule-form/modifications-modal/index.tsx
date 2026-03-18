@@ -1,5 +1,5 @@
 import { Alert, Modal } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { RuleDirection, RuleModification } from '@/types';
 
@@ -43,6 +43,14 @@ export const ModificationsModal = ({
   const [local, setLocal] = useState<RuleModification[]>(value);
   const [modsError, setModsError] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setLocal(value);
+    setModsError(false);
+    setConflictError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleOk = () => {
     const empty = local.length === 0;
