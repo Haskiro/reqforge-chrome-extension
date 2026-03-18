@@ -16,3 +16,39 @@
 .valueInput {
   flex: 2;
 }
+
+.bodyEditor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bodyToolbar {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.langSelect {
+  width: 120px;
+}
+
+.formdataHint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.editorWrapper {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.editorWrapperError {
+  border: 1px solid #ff4d4f;
+  border-radius: 6px;
+  overflow: hidden;
+}

@@ -24,6 +24,7 @@ interface RulesState {
   interactiveGroups: Group[];
   backgroundGroups: Group[];
   selectedRuleId: string | null;
+  selectionVersion: number;
   activeMode: RuleMode;
   loaded: boolean;
 }
@@ -33,6 +34,7 @@ const initialState: RulesState = {
   backgroundGroups: [{ id: DEFAULT_BACKGROUND_GROUP_ID, name: 'Группа по умолчанию' }],
   rules: [],
   selectedRuleId: null,
+  selectionVersion: 0,
   activeMode: 'interactive',
   loaded: false,
 };
@@ -82,6 +84,7 @@ const rulesSlice = createSlice({
     },
     setSelectedRuleId(state, action: PayloadAction<string | null>) {
       state.selectedRuleId = action.payload;
+      state.selectionVersion += 1;
     },
     setActiveMode(state, action: PayloadAction<RuleMode>) {
       state.activeMode = action.payload;
