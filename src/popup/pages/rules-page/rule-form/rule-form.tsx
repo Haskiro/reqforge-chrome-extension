@@ -15,36 +15,13 @@ import {
 import type { RuleDirection, RuleModification } from '@/types';
 
 import styles from '../rules-page.module.css';
+import type { RuleFormValues } from './constants';
+import {
+  BACKGROUND_DIRECTION_OPTIONS,
+  HTTP_METHODS,
+  INTERACTIVE_DIRECTION_OPTIONS,
+} from './constants';
 import { ModificationsModal } from './modifications-modal';
-
-const HTTP_METHODS = [
-  { value: 'ANY', label: 'Любой' },
-  { value: 'GET', label: 'GET' },
-  { value: 'POST', label: 'POST' },
-  { value: 'PUT', label: 'PUT' },
-  { value: 'DELETE', label: 'DELETE' },
-  { value: 'PATCH', label: 'PATCH' },
-];
-
-const DIRECTION_OPTIONS_STOPPING: { value: RuleDirection; label: string }[] = [
-  { value: 'ANY', label: 'Любое' },
-  { value: 'REQUEST', label: 'Запрос' },
-  { value: 'RESPONSE', label: 'Ответ' },
-];
-
-const DIRECTION_OPTIONS_BACKGROUND: { value: Exclude<RuleDirection, 'ANY'>; label: string }[] = [
-  { value: 'REQUEST', label: 'Запрос' },
-  { value: 'RESPONSE', label: 'Ответ' },
-];
-
-type RuleFormValues = {
-  groupName: string;
-  name: string;
-  method: string[];
-  ruleTypeId: number;
-  value: string;
-  direction: RuleDirection;
-};
 
 export const RuleForm = () => {
   const dispatch = useAppDispatch();
@@ -84,23 +61,25 @@ export const RuleForm = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionVersion]);
 
+  const resolveGroup = (groupName: string, gs: typeof groups): { id: string; isNew: boolean } => {
+    const trimmedName = groupName?.trim();
+    const existing = gs.find((g) => g.name === trimmedName);
+    if (existing) return { id: existing.id, isNew: false };
+    if (trimmedName) return { id: crypto.randomUUID(), isNew: true };
+    return {
+      id: activeMode === 'interactive' ? DEFAULT_GROUP_ID : DEFAULT_BACKGROUND_GROUP_ID,
+      isNew: false,
+    };
+  };
+
   const handleSave = (values: RuleFormValues) => {
     if (activeMode === 'background' && modifications.length === 0) {
       setModsError(true);
       return;
     }
 
-    const trimmedName = values.groupName?.trim();
-    const existingGroup = groups.find((g) => g.name === trimmedName);
-    let groupId = existingGroup?.id;
-    if (!groupId) {
-      if (trimmedName) {
-        groupId = crypto.randomUUID();
-        dispatch(addGroup({ id: groupId, name: trimmedName }));
-      } else {
-        groupId = activeMode === 'interactive' ? DEFAULT_GROUP_ID : DEFAULT_BACKGROUND_GROUP_ID;
-      }
-    }
+    const { id: groupId, isNew } = resolveGroup(values.groupName, groups);
+    if (isNew) dispatch(addGroup({ id: groupId, name: values.groupName.trim() }));
 
     if (selectedRule) {
       dispatch(updateRule({ ...selectedRule, ...values, groupId, modifications }));
@@ -198,8 +177,8 @@ export const RuleForm = () => {
           <Select
             options={
               activeMode === 'interactive'
-                ? DIRECTION_OPTIONS_STOPPING
-                : DIRECTION_OPTIONS_BACKGROUND
+                ? INTERACTIVE_DIRECTION_OPTIONS
+                : BACKGROUND_DIRECTION_OPTIONS
             }
           />
         </Form.Item>

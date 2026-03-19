@@ -20,11 +20,7 @@ import { DeleteGroupModal } from '../delete-group-modal';
 import { EditGroupModal } from '../edit-group-modal';
 import { RuleRow } from '../rule-row';
 import styles from '../rules-page.module.css';
-
-const MODE_TABS = [
-  { key: 'interactive', label: 'Останавливающие' },
-  { key: 'background', label: 'Фоновые' },
-];
+import { MODE_TABS } from './constants';
 
 export const RulesList = () => {
   const dispatch = useAppDispatch();
@@ -126,6 +122,7 @@ export const RulesList = () => {
         open={deletingGroup !== null}
         group={deletingGroup}
         otherGroups={groups.filter((g) => g.id !== deletingGroup?.id)}
+        rulesCount={filteredRules.filter((r) => r.groupId === deletingGroup?.id).length}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeletingGroup(null)}
       />

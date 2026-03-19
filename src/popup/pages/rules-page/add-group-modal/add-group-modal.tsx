@@ -1,7 +1,7 @@
 import { Input, Modal } from 'antd';
 import { useState } from 'react';
 
-type AddGroupModalProps = {
+export type AddGroupModalProps = {
   open: boolean;
   onClose: () => void;
   onAdd: (name: string) => void;

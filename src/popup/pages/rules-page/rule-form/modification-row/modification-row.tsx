@@ -1,47 +1,12 @@
 import { DeleteOutlined } from '@ant-design/icons';
-import { html } from '@codemirror/lang-html';
-import { javascript } from '@codemirror/lang-javascript';
-import { json } from '@codemirror/lang-json';
-import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import { Button, Input, Select } from 'antd';
 
 import type { BodyLanguage, ModificationType, RuleModification } from '@/types';
 
+import { BODY_LANGUAGES, FORMDATA_HINT, MODIFICATION_TYPES } from './constants';
+import { getExtensions } from './helpers';
 import styles from './modification-row.module.css';
-
-const MODIFICATION_TYPES: { value: ModificationType; label: string }[] = [
-  { value: 'ADD_HEADER', label: 'Добавить заголовок' },
-  { value: 'REPLACE_BODY', label: 'Заменить тело' },
-  { value: 'REPLACE_URL', label: 'Заменить URL' },
-  { value: 'REPLACE_STATUS', label: 'Заменить статус' },
-];
-
-const BODY_LANGUAGES: { value: BodyLanguage; label: string }[] = [
-  { value: 'json', label: 'JSON' },
-  { value: 'xml', label: 'XML' },
-  { value: 'html', label: 'HTML' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'formdata', label: 'Form Data' },
-];
-
-const FORMDATA_HINT =
-  'Формат: key1=value1&key2=value2. Спецсимволы необходимо кодировать вручную (%20 — пробел, %40 — @, и т.д.)';
-
-const getExtensions = (lang: BodyLanguage) => {
-  switch (lang) {
-    case 'json':
-      return [json()];
-    case 'xml':
-      return [xml()];
-    case 'html':
-      return [html()];
-    case 'javascript':
-      return [javascript()];
-    case 'formdata':
-      return [];
-  }
-};
 
 export type ModificationRowProps = {
   modification: RuleModification;
@@ -56,6 +21,8 @@ export const ModificationRow = ({
   onChange,
   onDelete,
 }: ModificationRowProps) => {
+  const isReplaceBody = modification.type === 'REPLACE_BODY';
+
   const handleTypeChange = (type: ModificationType) => {
     if (type === 'REPLACE_BODY') {
       onChange({ ...modification, type, name: null, value: '', bodyLanguage: 'json' });
@@ -65,7 +32,7 @@ export const ModificationRow = ({
         type,
         name: type === 'ADD_HEADER' ? (modification.name ?? '') : null,
         bodyLanguage: null,
-        value: modification.type === 'REPLACE_BODY' ? '' : modification.value,
+        value: isReplaceBody ? '' : modification.value,
       });
     }
   };
@@ -74,7 +41,7 @@ export const ModificationRow = ({
     showErrors && modification.type === 'ADD_HEADER' && !(modification.name ?? '').trim();
   const valueEmpty = showErrors && !modification.value.trim();
 
-  if (modification.type === 'REPLACE_BODY') {
+  if (isReplaceBody) {
     return (
       <div className={styles.bodyEditor}>
         <div className={styles.bodyToolbar}>
