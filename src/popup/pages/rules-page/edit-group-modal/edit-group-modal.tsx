@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 import type { Group } from '@/types';
 
-type EditGroupModalProps = {
+export type EditGroupModalProps = {
   open: boolean;
   group: Group | null;
   onConfirm: (name: string) => void;
