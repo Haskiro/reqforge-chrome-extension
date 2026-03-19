@@ -6,25 +6,29 @@ import { savePersistedRules } from '@/services/rulesStorage';
 
 import authReducer from './authSlice';
 import rulesReducer from './rulesSlice';
+import trafficReducer from './trafficSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     rules: rulesReducer,
+    traffic: trafficReducer,
   },
 });
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let prevRulesState = store.getState().rules;
 
 store.subscribe(() => {
-  const {
-    rules: { rules, interactiveGroups, backgroundGroups, loaded },
-  } = store.getState();
-  if (!loaded) return;
+  const { rules } = store.getState();
+  if (!rules.loaded) return;
+  if (rules === prevRulesState) return;
+  prevRulesState = rules;
 
+  const { rules: ruleList, interactiveGroups, backgroundGroups } = rules;
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    void savePersistedRules({ rules, interactiveGroups, backgroundGroups });
+    void savePersistedRules({ rules: ruleList, interactiveGroups, backgroundGroups });
   }, 300);
 });
 

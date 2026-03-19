@@ -26,6 +26,7 @@ chrome.action.onClicked.addListener(() => {
     });
     popupWindowId = win?.id;
     await chrome.storage.session.set({ popupWindowId: win?.id });
+    await chrome.storage.local.set({ entries: [] });
 
     // Start intercepting when popup opens
     if (shouldIntercept() && targetTabId != null && !attachedTabs.has(targetTabId)) {
@@ -69,6 +70,8 @@ const attachedTabs = new Set<number>();
 const cdpKeyToEntry = new Map<string, string>();
 // entryId → { tabId, cdpRequestId }
 const entryToCdp = new Map<string, { tabId: number; cdpRequestId: string }>();
+// Network.RequestId → entryId (for detecting cancelled requests)
+const networkToEntry = new Map<string, string>();
 
 let filterUrl = '';
 // The single tab we're currently intercepting
@@ -296,6 +299,7 @@ chrome.debugger.onDetach.addListener((source, reason) => {
 async function tryAttachTab(tabId: number): Promise<void> {
   try {
     await chrome.debugger.attach({ tabId }, '1.3');
+    await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {});
     await enableFetch(tabId);
     attachedTabs.add(tabId);
     console.log(`[RF:sw] attached debugger to tab ${tabId}`);
@@ -317,7 +321,11 @@ async function tryDetachTab(tabId: number): Promise<void> {
 const hasEnabledBackgroundRules = (): boolean =>
   cachedRules.some((r) => r.enabled && r.mode === 'background');
 
-const shouldIntercept = (): boolean => !!filterUrl || hasEnabledBackgroundRules();
+const hasEnabledInteractiveRules = (): boolean =>
+  cachedRules.some((r) => r.enabled && r.mode === 'interactive');
+
+const shouldIntercept = (): boolean =>
+  !!filterUrl || hasEnabledBackgroundRules() || hasEnabledInteractiveRules();
 
 function ruleToGlobPattern(rule: Rule): string {
   switch (rule.ruleTypeId) {
@@ -341,7 +349,7 @@ async function enableFetch(tabId: number): Promise<void> {
   }
 
   for (const rule of cachedRules) {
-    if (!rule.enabled || rule.mode !== 'background') continue;
+    if (!rule.enabled) continue;
     const urlPattern = ruleToGlobPattern(rule);
     const needsRequest = rule.direction === 'REQUEST' || rule.direction === 'ANY';
     const needsResponse = rule.direction === 'RESPONSE' || rule.direction === 'ANY';
@@ -360,12 +368,30 @@ function escapeGlob(s: string): string {
 // ── CDP event handling ────────────────────────────────────────────────────────
 
 chrome.debugger.onEvent.addListener((source, method, params) => {
-  if (method !== 'Fetch.requestPaused') return;
   const tabId = source.tabId;
   if (tabId == null) return;
 
+  if (method === 'Network.loadingFailed') {
+    const p = params as { requestId: string; canceled?: boolean };
+    if (!p.canceled) return;
+    const entryId = networkToEntry.get(p.requestId);
+    if (!entryId) return;
+    networkToEntry.delete(p.requestId);
+    const cdpInfo = entryToCdp.get(entryId);
+    if (cdpInfo) {
+      cdpKeyToEntry.delete(`${cdpInfo.tabId}:${cdpInfo.cdpRequestId}`);
+      entryToCdp.delete(entryId);
+    }
+    void deleteEntry(entryId);
+    void saveCdpMaps();
+    return;
+  }
+
+  if (method !== 'Fetch.requestPaused') return;
+
   const p = params as {
     requestId: string;
+    networkId?: string;
     request: {
       url: string;
       method: string;
@@ -386,13 +412,14 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
       p.responseHeaders ?? [],
     );
   } else {
-    void handleRequestPaused(tabId, p.requestId, p.request);
+    void handleRequestPaused(tabId, p.requestId, p.networkId ?? null, p.request);
   }
 });
 
 async function handleRequestPaused(
   tabId: number,
   cdpRequestId: string,
+  networkId: string | null,
   request: { url: string; method: string; headers: Record<string, string>; postData?: string },
 ): Promise<void> {
   if (popupWindowId == null) {
@@ -454,6 +481,7 @@ async function handleRequestPaused(
   const cdpKey = `${tabId}:${cdpRequestId}`;
   cdpKeyToEntry.set(cdpKey, id);
   entryToCdp.set(id, { tabId, cdpRequestId });
+  if (networkId) networkToEntry.set(networkId, id);
   await saveCdpMaps();
 
   const entry: StoredEntry = {
@@ -572,6 +600,18 @@ async function handleResponsePaused(
     return;
   }
 
+  // If the rule direction is REQUEST-only, auto-continue the response
+  if (!hasInteractiveMatch(cachedRules, url, method, 'RESPONSE')) {
+    try {
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+        requestId: cdpRequestId,
+      });
+    } catch (e) {
+      console.warn('[RF:sw] continueResponse (request-only rule) failed:', e);
+    }
+    return;
+  }
+
   let responseBody: string | undefined;
   try {
     const bodyResult = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
@@ -579,33 +619,64 @@ async function handleResponsePaused(
     })) as { body: string; base64Encoded: boolean };
     responseBody = bodyResult.base64Encoded ? atob(bodyResult.body) : bodyResult.body;
   } catch (e) {
-    console.warn(`[RF:sw] getResponseBody failed for ${entryId}:`, e);
+    console.warn(`[RF:sw] getResponseBody failed for response of ${entryId}:`, e);
   }
 
-  await patchEntry(entryId, {
+  // Create a separate response entry so the request entry stays visible as "Запрос"
+  const responseId = crypto.randomUUID();
+  const responseEntry: StoredEntry = {
+    id: responseId,
+    timestamp: Date.now(),
+    method,
+    url,
+    requestHeaders: {},
     status: 'response_pending',
     responseStatus: statusCode,
     responseHeaders: headersArrayToObject(responseHeaders),
     responseBody,
-  });
+    tabId,
+  };
+  await upsertEntry(responseEntry);
+
+  cdpKeyToEntry.set(cdpKey, responseId);
+  entryToCdp.delete(entryId);
+  entryToCdp.set(responseId, { tabId, cdpRequestId });
+  await saveCdpMaps();
   console.log(
-    `[RF:sw] response paused tab=${tabId} entryId=${entryId} status=${statusCode} url=${url}`,
+    `[RF:sw] response paused tab=${tabId} responseEntryId=${responseId} status=${statusCode} url=${url}`,
   );
 }
 
-// ── Popup messages ────────────────────────────────────────────────────────────
+// ── Message handler ───────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg: PopupToWorker, _sender, sendResponse) => {
   void (async () => {
     if (msg.type === 'PROCEED') {
       await handleProceed(msg);
+    } else if (msg.type === 'PROCEED_MANY') {
+      await handleProceedMany(msg);
     } else if (msg.type === 'APPLY_RESPONSE') {
       await handleApplyResponse(msg);
+    } else if (msg.type === 'REJECT') {
+      await handleReject(msg);
+    } else if (msg.type === 'REJECT_MANY') {
+      await handleRejectMany(msg);
+    } else if (msg.type === 'APPLY_RESPONSE_MANY') {
+      await handleApplyResponseMany(msg);
     }
     sendResponse({ ok: true });
   })();
   return true;
 });
+
+// ── Keepalive (prevents SW from being killed while requests are paused) ───────
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'keepalive') return;
+  port.onMessage.addListener(() => {});
+});
+
+// ── Popup messages ────────────────────────────────────────────────────────────
 
 async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): Promise<void> {
   const { entry, editedBody } = msg;
@@ -616,23 +687,20 @@ async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): 
   }
 
   const { tabId, cdpRequestId } = cdpInfo;
-  const body = editedBody ?? entry.requestBody;
   const continueParams: Record<string, unknown> = { requestId: cdpRequestId };
-  // CDP Fetch.continueRequest.postData must be base64-encoded
-  if (body !== undefined) {
-    continueParams.postData = stringToBase64(body);
+  // Only override postData if the user explicitly edited it — otherwise let Chrome
+  // pass through the original bytes untouched to avoid re-encoding corruption.
+  if (editedBody !== undefined) {
+    continueParams.postData = stringToBase64(editedBody);
   }
 
   try {
     await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', continueParams);
-    await patchEntry(entry.id, {
-      status: 'sent',
-      requestBody: body ?? entry.requestBody,
-    });
     console.log(`[RF:sw] continued request tab=${tabId} entryId=${entry.id}`);
   } catch (e) {
     console.error('[RF:sw] continueRequest failed:', e);
   }
+  await deleteEntry(entry.id);
 }
 
 async function handleApplyResponse(
@@ -652,29 +720,132 @@ async function handleApplyResponse(
   const entry = entries.find((e) => e.id === entryId);
   if (!entry) return;
 
-  const finalBody = editedBody ?? entry.responseBody ?? '';
-  const statusCode = entry.responseStatus ?? 200;
-  const cdpHeaders = Object.entries(entry.responseHeaders ?? {}).map(([name, value]) => ({
-    name,
-    value: String(value),
-  }));
-
   try {
-    await chrome.debugger.sendCommand({ tabId }, 'Fetch.fulfillRequest', {
-      requestId: cdpRequestId,
-      responseCode: statusCode,
-      responseHeaders: cdpHeaders,
-      body: stringToBase64(finalBody),
-    });
-    await patchEntry(entryId, { status: 'complete', responseBody: finalBody });
+    if (editedBody !== undefined) {
+      const statusCode = entry.responseStatus ?? 200;
+      const cdpHeaders = Object.entries(entry.responseHeaders ?? {}).map(([name, value]) => ({
+        name,
+        value: String(value),
+      }));
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.fulfillRequest', {
+        requestId: cdpRequestId,
+        responseCode: statusCode,
+        responseHeaders: cdpHeaders,
+        body: stringToBase64(editedBody),
+      });
+    } else {
+      await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+        requestId: cdpRequestId,
+      });
+    }
     console.log(`[RF:sw] fulfilled response tab=${tabId} entryId=${entryId}`);
   } catch (e) {
     console.error('[RF:sw] fulfillRequest failed:', e);
   }
-
+  await deleteEntry(entryId);
   cdpKeyToEntry.delete(`${tabId}:${cdpRequestId}`);
   entryToCdp.delete(entryId);
   await saveCdpMaps();
+}
+
+async function handleReject(msg: Extract<PopupToWorker, { type: 'REJECT' }>): Promise<void> {
+  const { entryId } = msg;
+  const cdpInfo = entryToCdp.get(entryId);
+  if (!cdpInfo) {
+    console.warn(`[RF:sw] REJECT: no CDP info for entry ${entryId}`);
+    return;
+  }
+
+  const { tabId, cdpRequestId } = cdpInfo;
+  try {
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.failRequest', {
+      requestId: cdpRequestId,
+      errorReason: 'Failed',
+    });
+    console.log(`[RF:sw] rejected request tab=${tabId} entryId=${entryId}`);
+  } catch (e) {
+    console.error('[RF:sw] failRequest failed:', e);
+  }
+  await deleteEntry(entryId);
+  cdpKeyToEntry.delete(`${tabId}:${cdpRequestId}`);
+  entryToCdp.delete(entryId);
+  await saveCdpMaps();
+}
+
+async function handleRejectMany(
+  msg: Extract<PopupToWorker, { type: 'REJECT_MANY' }>,
+): Promise<void> {
+  const { entryIds } = msg;
+  await Promise.all(
+    entryIds.map(async (entryId) => {
+      const cdpInfo = entryToCdp.get(entryId);
+      if (!cdpInfo) return;
+      const { tabId, cdpRequestId } = cdpInfo;
+      try {
+        await chrome.debugger.sendCommand({ tabId }, 'Fetch.failRequest', {
+          requestId: cdpRequestId,
+          errorReason: 'Failed',
+        });
+      } catch (e) {
+        console.error('[RF:sw] failRequest failed:', e);
+      }
+      cdpKeyToEntry.delete(`${tabId}:${cdpRequestId}`);
+      entryToCdp.delete(entryId);
+    }),
+  );
+  await deleteEntries(entryIds);
+  await saveCdpMaps();
+  console.log(`[RF:sw] rejected ${entryIds.length} entries`);
+}
+
+async function handleApplyResponseMany(
+  msg: Extract<PopupToWorker, { type: 'APPLY_RESPONSE_MANY' }>,
+): Promise<void> {
+  const { entryIds } = msg;
+
+  await Promise.all(
+    entryIds.map(async (entryId) => {
+      const cdpInfo = entryToCdp.get(entryId);
+      if (!cdpInfo) return;
+      const { tabId, cdpRequestId } = cdpInfo;
+
+      try {
+        await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+          requestId: cdpRequestId,
+        });
+      } catch (e) {
+        console.error('[RF:sw] continueResponse failed:', e);
+      }
+      cdpKeyToEntry.delete(`${tabId}:${cdpRequestId}`);
+      entryToCdp.delete(entryId);
+    }),
+  );
+  await deleteEntries(entryIds);
+  await saveCdpMaps();
+  console.log(`[RF:sw] applied responses for ${entryIds.length} entries`);
+}
+
+async function handleProceedMany(
+  msg: Extract<PopupToWorker, { type: 'PROCEED_MANY' }>,
+): Promise<void> {
+  const { entries } = msg;
+  await Promise.all(
+    entries.map(async (entry) => {
+      const cdpInfo = entryToCdp.get(entry.id);
+      if (!cdpInfo) return;
+      const { tabId, cdpRequestId } = cdpInfo;
+      // No editedBody in bulk proceed — let Chrome pass through original bytes untouched.
+      try {
+        await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+          requestId: cdpRequestId,
+        });
+      } catch (e) {
+        console.error('[RF:sw] continueRequest failed:', e);
+      }
+    }),
+  );
+  await deleteEntries(entries.map((e) => e.id));
+  console.log(`[RF:sw] proceeded ${entries.length} entries`);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -717,6 +888,10 @@ async function cleanupTabMaps(tabId: number): Promise<void> {
       entryToCdp.delete(entryId);
     }
   }
+  for (const [networkId, entryId] of networkToEntry) {
+    const cdpInfo = entryToCdp.get(entryId);
+    if (!cdpInfo || cdpInfo.tabId === tabId) networkToEntry.delete(networkId);
+  }
   await saveCdpMaps();
 }
 
@@ -727,14 +902,13 @@ async function upsertEntry(entry: StoredEntry): Promise<void> {
   await chrome.storage.local.set({ entries: updated });
 }
 
-async function patchEntry(id: string, patch: Partial<StoredEntry>): Promise<void> {
+async function deleteEntry(id: string): Promise<void> {
+  await deleteEntries([id]);
+}
+
+async function deleteEntries(ids: string[]): Promise<void> {
+  const idSet = new Set(ids);
   const result = await chrome.storage.local.get('entries');
   const existing: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
-  if (!existing.some((e) => e.id === id)) {
-    console.warn(`[RF:sw] patchEntry: id=${id} not found`);
-    return;
-  }
-  await chrome.storage.local.set({
-    entries: existing.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-  });
+  await chrome.storage.local.set({ entries: existing.filter((e) => !idSet.has(e.id)) });
 }

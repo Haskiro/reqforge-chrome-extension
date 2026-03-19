@@ -1,5 +1,7 @@
 import { ChooseAuthPage } from '@pages/choose-auth-page';
+import { HelpPage } from '@pages/help-page';
 import { RulesPage } from '@pages/rules-page';
+import { TrafficPage } from '@pages/traffic-page';
 import { useEffect } from 'react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 
@@ -20,6 +22,22 @@ export const App = () => {
     void init();
   }, [dispatch]);
 
+  useEffect(() => {
+    const port = chrome.runtime.connect({ name: 'keepalive' });
+    const interval = setInterval(() => {
+      try {
+        port.postMessage('ping');
+      } catch {
+        clearInterval(interval);
+      }
+    }, 5000);
+    port.onDisconnect.addListener(() => clearInterval(interval));
+    return () => {
+      clearInterval(interval);
+      port.disconnect();
+    };
+  }, []);
+
   if (!authLoaded || !rulesLoaded) return null;
 
   const initialRoute = mode !== null ? '/rules' : '/choose-auth';
@@ -29,6 +47,8 @@ export const App = () => {
       <Routes>
         <Route path="/choose-auth" element={<ChooseAuthPage />} />
         <Route path="/rules" element={<RulesPage />} />
+        <Route path="/traffic" element={<TrafficPage />} />
+        <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to="/choose-auth" replace />} />
       </Routes>
     </MemoryRouter>
