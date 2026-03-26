@@ -5,12 +5,17 @@ export type PopupToWorker =
   | {
       type: 'PROCEED';
       entry: StoredEntry;
+      editedUrl?: string;
+      editedMethod?: string;
+      editedHeaders?: Record<string, string>;
       editedBody?: string;
     }
   | {
       type: 'APPLY_RESPONSE';
       entryId: string;
       editedBody?: string;
+      editedResponseHeaders?: Record<string, string>;
+      editedResponseStatus?: number;
     }
   | { type: 'REJECT'; entryId: string }
   | { type: 'REJECT_MANY'; entryIds: string[] }

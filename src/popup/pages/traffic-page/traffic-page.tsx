@@ -1,10 +1,12 @@
 import { DownOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { AppBar } from '@components/app-bar';
-import { Button, Dropdown, Input, Table } from 'antd';
+import { Button, Dropdown, Flex, Input, Layout, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { SortOrder } from 'antd/es/table/interface';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { useEntriesChange } from '@/shared/hooks';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { loadTrafficFromStorage, setTrafficEntries } from '@/store/trafficSlice';
 import type { StoredEntry } from '@/types';
@@ -14,6 +16,7 @@ import styles from './traffic-page.module.css';
 
 export const TrafficPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const entries = useAppSelector((s) => s.traffic.entries);
 
   const [searchValue, setSearchValue] = useState('');
@@ -22,15 +25,9 @@ export const TrafficPage = () => {
 
   useEffect(() => {
     void dispatch(loadTrafficFromStorage());
-
-    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-      if (area !== 'local' || !changes.entries) return;
-      dispatch(setTrafficEntries((changes.entries.newValue as StoredEntry[]) ?? []));
-    };
-
-    chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
   }, [dispatch]);
+
+  useEntriesChange(useCallback((entries) => dispatch(setTrafficEntries(entries)), [dispatch]));
 
   const filteredEntries = useMemo(
     () =>
@@ -67,6 +64,12 @@ export const TrafficPage = () => {
             }
           },
         },
+        {
+          key: 'modify',
+          label: 'Модифицировать',
+          disabled: !isPending && !isResponsePending,
+          onClick: () => void navigate('/modify-request', { state: { entry } }),
+        },
         { key: 'repeat', label: 'Повторить', disabled: true },
       ],
     };
@@ -96,12 +99,18 @@ export const TrafficPage = () => {
     setSelectedRowKeys([]);
   };
 
+  const handleModifySelected = () => {
+    const entry = entries.find((e) => e.id === selectedRowKeys[0]);
+    if (entry) void navigate('/modify-request', { state: { entry } });
+  };
+
   const moreActions = {
     items: [
       {
         key: 'modify',
         label: 'Модифицировать',
         disabled: selectedRowKeys.length !== 1,
+        onClick: handleModifySelected,
       },
       { key: 'repeat-all', label: 'Повторить', disabled: true },
     ],
@@ -168,10 +177,10 @@ export const TrafficPage = () => {
   ];
 
   return (
-    <div className={styles.page}>
+    <Layout className={styles.page}>
       <AppBar active="traffic" />
 
-      <div className={styles.toolbar}>
+      <Flex gap={8} align="center" className={styles.toolbar}>
         <Input.Search
           className={styles.toolbarSearch}
           placeholder="Адрес"
@@ -182,7 +191,7 @@ export const TrafficPage = () => {
           enterButton={true}
           size="large"
         />
-        <div className={styles.toolbarActions}>
+        <Space className={styles.toolbarActions}>
           <Button
             variant="text"
             color="primary"
@@ -206,10 +215,10 @@ export const TrafficPage = () => {
               Ещё <DownOutlined />
             </Button>
           </Dropdown>
-        </div>
-      </div>
+        </Space>
+      </Flex>
 
-      <div className={styles.content}>
+      <Layout.Content className={styles.content}>
         <Table<StoredEntry>
           size="small"
           rowKey="id"
@@ -225,7 +234,7 @@ export const TrafficPage = () => {
           bordered={true}
           locale={{ emptyText: 'Нет перехваченных запросов' }}
         />
-      </div>
-    </div>
+      </Layout.Content>
+    </Layout>
   );
 };

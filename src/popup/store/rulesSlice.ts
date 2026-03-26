@@ -173,9 +173,9 @@ const rulesSlice = createSlice({
     builder.addCase(loadRulesFromStorage.fulfilled, (state, action) => {
       if (action.payload) {
         state.rules = action.payload.rules.map((r) => ({
+          ...r,
           modifications: [],
           direction: 'ANY' as const,
-          ...r,
         }));
         state.interactiveGroups = action.payload.interactiveGroups ?? [
           { id: DEFAULT_GROUP_ID, name: 'Группа по умолчанию' },

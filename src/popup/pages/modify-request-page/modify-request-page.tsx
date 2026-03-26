@@ -1,0 +1,236 @@
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import CodeMirror from '@uiw/react-codemirror';
+import { Button, Input, InputNumber, Layout, Select, Space, Tabs, Typography } from 'antd';
+import { useCallback, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import { BODY_LANGUAGES, HTTP_METHOD_VALUES } from '@/shared/constants';
+import { getExtensions } from '@/shared/helpers';
+import { useEntriesChange } from '@/shared/hooks.ts';
+import type { BodyLanguage, StoredEntry } from '@/types';
+
+import { HeadersTable } from './headers-table';
+import {
+  buildRawText,
+  buildRequestFirstLine,
+  buildResponseFirstLine,
+  parseRawText,
+  parseRequestFirstLine,
+  parseResponseFirstLine,
+  tryPrettify,
+} from './helpers';
+import styles from './modify-request-page.module.css';
+
+export const ModifyRequestPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const entry = (location.state as { entry: StoredEntry }).entry;
+
+  const isResponse = entry.status === 'response_pending';
+
+  const [url, setUrl] = useState(entry.url);
+  const [method, setMethod] = useState(entry.method);
+  const [responseStatus, setResponseStatus] = useState<number>(entry.responseStatus ?? 200);
+  const [headers, setHeaders] = useState<Record<string, string>>(
+    isResponse ? (entry.responseHeaders ?? {}) : (entry.requestHeaders ?? {}),
+  );
+  const [body, setBody] = useState(() =>
+    tryPrettify(isResponse ? (entry.responseBody ?? '') : (entry.requestBody ?? '')),
+  );
+  const [bodyLanguage, setBodyLanguage] = useState<BodyLanguage>('json');
+  const [activeTab, setActiveTab] = useState<'form' | 'text'>('form');
+  const [rawText, setRawText] = useState(() => {
+    const firstLine = isResponse
+      ? buildResponseFirstLine(entry.responseStatus ?? 200)
+      : buildRequestFirstLine(entry.method, entry.url);
+    return buildRawText(
+      firstLine,
+      isResponse ? (entry.responseHeaders ?? {}) : (entry.requestHeaders ?? {}),
+      isResponse ? entry.responseBody : entry.requestBody,
+    );
+  });
+
+  const handleTabChange = (key: string) => {
+    if (key === 'text') {
+      const firstLine = isResponse
+        ? buildResponseFirstLine(responseStatus)
+        : buildRequestFirstLine(method, url);
+      setRawText(buildRawText(firstLine, headers, body));
+    } else {
+      const { firstLine, headers: parsedHeaders, body: parsedBody } = parseRawText(rawText);
+      if (isResponse) {
+        setResponseStatus(parseResponseFirstLine(firstLine));
+      } else {
+        const { method: parsedMethod, url: parsedUrl } = parseRequestFirstLine(firstLine);
+        setMethod(parsedMethod);
+        setUrl(parsedUrl);
+      }
+      setHeaders(parsedHeaders);
+      setBody(parsedBody);
+    }
+    setActiveTab(key as 'form' | 'text');
+  };
+
+  const handleSubmit = () => {
+    if (activeTab === 'text') {
+      const { firstLine, headers: parsedHeaders, body: parsedBody } = parseRawText(rawText);
+      if (isResponse) {
+        void chrome.runtime.sendMessage({
+          type: 'APPLY_RESPONSE',
+          entryId: entry.id,
+          editedBody: parsedBody || undefined,
+          editedResponseHeaders: parsedHeaders,
+          editedResponseStatus: parseResponseFirstLine(firstLine),
+        });
+      } else {
+        const { method: parsedMethod, url: parsedUrl } = parseRequestFirstLine(firstLine);
+        void chrome.runtime.sendMessage({
+          type: 'PROCEED',
+          entry,
+          editedUrl: parsedUrl,
+          editedMethod: parsedMethod,
+          editedHeaders: parsedHeaders,
+          editedBody: parsedBody || undefined,
+        });
+      }
+    } else if (isResponse) {
+      void chrome.runtime.sendMessage({
+        type: 'APPLY_RESPONSE',
+        entryId: entry.id,
+        editedBody: body || undefined,
+        editedResponseHeaders: headers,
+        editedResponseStatus: responseStatus,
+      });
+    } else {
+      void chrome.runtime.sendMessage({
+        type: 'PROCEED',
+        entry,
+        editedUrl: url,
+        editedMethod: method,
+        editedHeaders: headers,
+        editedBody: body || undefined,
+      });
+    }
+    void navigate('/traffic');
+  };
+
+  useEntriesChange(
+    useCallback(
+      (entries) => {
+        if (!entries.some((e) => e.id === entry.id)) void navigate('/traffic');
+      },
+      [entry.id, navigate],
+    ),
+  );
+
+  const handleCancel = () => void navigate('/traffic');
+
+  const methodOptions = HTTP_METHOD_VALUES.map((m) => ({ value: m, label: m }));
+
+  const fieldsTab = (
+    <div className={styles.fieldsContent}>
+      <div className={styles.section}>
+        <Typography.Title level={5} className={styles.sectionTitle}>
+          Адрес
+        </Typography.Title>
+        {isResponse ? (
+          <div className={styles.urlRow}>
+            <Input value={url} disabled className={styles.urlInput} />
+            <InputNumber
+              className={styles.statusInput}
+              value={responseStatus}
+              onChange={(v) => setResponseStatus(v ?? 200)}
+              min={100}
+              max={599}
+            />
+          </div>
+        ) : (
+          <Space.Compact>
+            <Select
+              value={method}
+              options={methodOptions}
+              onChange={setMethod}
+              popupMatchSelectWidth={false}
+            />
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} />
+          </Space.Compact>
+        )}
+      </div>
+
+      <div className={styles.section}>
+        <Typography.Title level={5} className={styles.sectionTitle}>
+          Заголовки
+        </Typography.Title>
+        <HeadersTable headers={headers} onChange={setHeaders} />
+      </div>
+
+      <div className={styles.section}>
+        <Typography.Title level={5} className={styles.sectionTitle}>
+          Тело
+        </Typography.Title>
+        <div className={styles.bodyToolbar}>
+          <Select
+            className={styles.langSelect}
+            value={bodyLanguage}
+            options={BODY_LANGUAGES}
+            onChange={(lang: BodyLanguage) => setBodyLanguage(lang)}
+          />
+        </div>
+        <div className={styles.editorWrapper}>
+          <CodeMirror
+            value={body}
+            extensions={getExtensions(bodyLanguage)}
+            onChange={setBody}
+            minHeight="120px"
+            basicSetup={{ lineNumbers: true, foldGutter: false }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const rawTab = (
+    <div className={styles.section}>
+      <div className={styles.editorWrapper}>
+        <CodeMirror
+          value={rawText}
+          onChange={setRawText}
+          minHeight="400px"
+          basicSetup={{ lineNumbers: true, foldGutter: false }}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <Layout className={styles.page}>
+      <div className={styles.header}>
+        <Button icon={<ArrowLeftOutlined />} type="text" onClick={handleCancel} />
+        <div className={styles.headerText}>
+          <span className={styles.headerTitle}>
+            {isResponse ? 'Модификация ответа' : 'Модификация запроса'}
+          </span>
+          <span className={styles.headerSubtitle}>
+            {entry.method} {entry.url}
+          </span>
+        </div>
+      </div>
+      <Layout.Content className={styles.content}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={[
+            { key: 'form', label: 'Форма', children: fieldsTab },
+            { key: 'text', label: 'Текст', children: rawTab },
+          ]}
+        />
+      </Layout.Content>
+      <Layout.Footer className={styles.footer}>
+        <Button type="primary" onClick={handleSubmit}>
+          Отправить
+        </Button>
+        <Button onClick={handleCancel}>Отменить</Button>
+      </Layout.Footer>
+    </Layout>
+  );
+};

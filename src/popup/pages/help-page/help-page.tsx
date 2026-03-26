@@ -1,14 +1,14 @@
 import { AppBar } from '@components/app-bar';
-import { Typography } from 'antd';
+import { Layout, Typography } from 'antd';
 
 import styles from './help-page.module.css';
 
 export const HelpPage = () => {
   return (
-    <div className={styles.page}>
+    <Layout className={styles.page}>
       <AppBar active="help" />
 
-      <div className={styles.content}>
+      <Layout.Content className={styles.content}>
         <Typography.Title level={4}>Справка</Typography.Title>
 
         <Typography.Title level={5}>Баннер отладки Chrome</Typography.Title>
@@ -33,7 +33,7 @@ export const HelpPage = () => {
           <strong>3. Запросы из iframe / web worker</strong> — перехватываются только запросы
           основного фрейма страницы.
         </Typography.Paragraph>
-      </div>
-    </div>
+      </Layout.Content>
+    </Layout>
   );
 };

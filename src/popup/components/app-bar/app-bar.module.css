@@ -1,17 +1,8 @@
 .appBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0 14px;
   height: 64px;
   flex-shrink: 0;
   border-bottom: 1px solid #f0f0f0;
-}
-
-.appBarLeft {
-  display: flex;
-  align-items: center;
-  gap: 16px;
 }
 
 .logo {
@@ -23,9 +14,7 @@
 }
 
 .nav {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  flex-wrap: nowrap;
 }
 
 .navItem {
@@ -41,12 +30,6 @@
 
 .navItemActive {
   color: #1677ff;
-}
-
-.appBarRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .avatar {

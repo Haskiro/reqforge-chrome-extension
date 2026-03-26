@@ -1,0 +1,14 @@
+.addButton {
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+}
+
+.addButton:hover {
+  background: #73d13d !important;
+  border-color: #73d13d !important;
+}
+
+.valueTextarea {
+  resize: vertical;
+  min-height: unset;
+}

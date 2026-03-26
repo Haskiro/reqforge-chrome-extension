@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Typography } from 'antd';
+import { Button, Flex, Typography } from 'antd';
 
 import type { RuleModification } from '@/types';
 
@@ -31,26 +31,24 @@ export const ModificationsList = ({ value, onChange, error }: ModificationsListP
   };
 
   return (
-    <div className={styles.container}>
+    <Flex vertical gap={8} className={styles.container}>
       {error && value.length === 0 && (
         <Typography.Text type="danger" className={styles.error}>
           Добавьте хотя бы одну модификацию
         </Typography.Text>
       )}
-      <div className={styles.list}>
-        {value.map((mod, index) => (
-          <ModificationRow
-            key={mod.id}
-            modification={mod}
-            showErrors={error ?? false}
-            onChange={(updated) => handleChange(index, updated)}
-            onDelete={() => handleDelete(index)}
-          />
-        ))}
-      </div>
+      {value.map((mod, index) => (
+        <ModificationRow
+          key={mod.id}
+          modification={mod}
+          showErrors={error ?? false}
+          onChange={(updated) => handleChange(index, updated)}
+          onDelete={() => handleDelete(index)}
+        />
+      ))}
       <Button icon={<PlusOutlined />} onClick={handleAdd}>
         Добавить модификацию
       </Button>
-    </div>
+    </Flex>
   );
 };
