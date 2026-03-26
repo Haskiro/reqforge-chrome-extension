@@ -7,6 +7,15 @@ import { findBackgroundMods, hasInteractiveMatch } from '../shared/ruleMatcher';
 
 let popupWindowId: number | undefined;
 
+const hasEnabledBackgroundRules = (): boolean =>
+  cachedRules.some((r) => r.enabled && r.mode === 'background');
+
+const hasEnabledInteractiveRules = (): boolean =>
+  cachedRules.some((r) => r.enabled && r.mode === 'interactive');
+
+const shouldIntercept = (): boolean =>
+  !!filterUrl || hasEnabledBackgroundRules() || hasEnabledInteractiveRules();
+
 chrome.action.onClicked.addListener(() => {
   void (async () => {
     if (popupWindowId != null) {
@@ -318,15 +327,6 @@ async function tryDetachTab(tabId: number): Promise<void> {
   await cleanupTabMaps(tabId);
 }
 
-const hasEnabledBackgroundRules = (): boolean =>
-  cachedRules.some((r) => r.enabled && r.mode === 'background');
-
-const hasEnabledInteractiveRules = (): boolean =>
-  cachedRules.some((r) => r.enabled && r.mode === 'interactive');
-
-const shouldIntercept = (): boolean =>
-  !!filterUrl || hasEnabledBackgroundRules() || hasEnabledInteractiveRules();
-
 function ruleToGlobPattern(rule: Rule): string {
   switch (rule.ruleTypeId) {
     case 1:
@@ -576,7 +576,7 @@ async function handleResponsePaused(
       const bodyResult = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
         requestId: cdpRequestId,
       })) as { body: string; base64Encoded: boolean };
-      responseBody = bodyResult.base64Encoded ? atob(bodyResult.body) : bodyResult.body;
+      responseBody = bodyResult.base64Encoded ? base64ToString(bodyResult.body) : bodyResult.body;
     } catch (e) {
       console.warn(`[RF:sw] getResponseBody failed for new entry ${id}:`, e);
     }
@@ -617,7 +617,7 @@ async function handleResponsePaused(
     const bodyResult = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
       requestId: cdpRequestId,
     })) as { body: string; base64Encoded: boolean };
-    responseBody = bodyResult.base64Encoded ? atob(bodyResult.body) : bodyResult.body;
+    responseBody = bodyResult.base64Encoded ? base64ToString(bodyResult.body) : bodyResult.body;
   } catch (e) {
     console.warn(`[RF:sw] getResponseBody failed for response of ${entryId}:`, e);
   }
@@ -679,7 +679,7 @@ chrome.runtime.onConnect.addListener((port) => {
 // ── Popup messages ────────────────────────────────────────────────────────────
 
 async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): Promise<void> {
-  const { entry, editedBody } = msg;
+  const { entry, editedUrl, editedMethod, editedHeaders, editedBody } = msg;
   const cdpInfo = entryToCdp.get(entry.id);
   if (!cdpInfo) {
     console.warn(`[RF:sw] PROCEED: no CDP info for entry ${entry.id}`);
@@ -688,8 +688,15 @@ async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): 
 
   const { tabId, cdpRequestId } = cdpInfo;
   const continueParams: Record<string, unknown> = { requestId: cdpRequestId };
-  // Only override postData if the user explicitly edited it — otherwise let Chrome
-  // pass through the original bytes untouched to avoid re-encoding corruption.
+  if (editedUrl !== undefined) continueParams.url = editedUrl;
+  if (editedMethod !== undefined) continueParams.method = editedMethod;
+  if (editedHeaders !== undefined) {
+    const finalHeaders = { ...editedHeaders };
+    for (const key of Object.keys(entry.requestHeaders ?? {})) {
+      if (!(key in finalHeaders)) finalHeaders[key] = '';
+    }
+    continueParams.headers = Object.entries(finalHeaders).map(([name, value]) => ({ name, value }));
+  }
   if (editedBody !== undefined) {
     continueParams.postData = stringToBase64(editedBody);
   }
@@ -706,7 +713,7 @@ async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): 
 async function handleApplyResponse(
   msg: Extract<PopupToWorker, { type: 'APPLY_RESPONSE' }>,
 ): Promise<void> {
-  const { entryId, editedBody } = msg;
+  const { entryId, editedBody, editedResponseHeaders, editedResponseStatus } = msg;
   const cdpInfo = entryToCdp.get(entryId);
   if (!cdpInfo) {
     console.warn(`[RF:sw] APPLY_RESPONSE: no CDP info for entry ${entryId}`);
@@ -721,17 +728,32 @@ async function handleApplyResponse(
   if (!entry) return;
 
   try {
-    if (editedBody !== undefined) {
-      const statusCode = entry.responseStatus ?? 200;
-      const cdpHeaders = Object.entries(entry.responseHeaders ?? {}).map(([name, value]) => ({
+    const hasEdits = editedBody !== undefined || editedResponseHeaders !== undefined;
+    if (hasEdits) {
+      const statusCode = editedResponseStatus ?? entry.responseStatus ?? 200;
+      const finalHeaders = editedResponseHeaders ?? entry.responseHeaders ?? {};
+      const cdpHeaders = Object.entries(finalHeaders).map(([name, value]) => ({
         name,
         value: String(value),
       }));
+      let bodyBase64: string;
+      if (editedBody !== undefined) {
+        bodyBase64 = stringToBase64(editedBody);
+      } else {
+        try {
+          const r = (await chrome.debugger.sendCommand({ tabId }, 'Fetch.getResponseBody', {
+            requestId: cdpRequestId,
+          })) as { body: string; base64Encoded: boolean };
+          bodyBase64 = r.base64Encoded ? r.body : stringToBase64(r.body);
+        } catch {
+          bodyBase64 = entry.responseBody ? stringToBase64(entry.responseBody) : stringToBase64('');
+        }
+      }
       await chrome.debugger.sendCommand({ tabId }, 'Fetch.fulfillRequest', {
         requestId: cdpRequestId,
         responseCode: statusCode,
         responseHeaders: cdpHeaders,
-        body: stringToBase64(editedBody),
+        body: bodyBase64,
       });
     } else {
       await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
@@ -866,6 +888,12 @@ function stringToBase64(str: string): string {
   let binary = '';
   bytes.forEach((b) => (binary += String.fromCharCode(b)));
   return btoa(binary);
+}
+
+function base64ToString(b64: string): string {
+  const binary = atob(b64);
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 async function cleanupTabEntries(tabId: number): Promise<void> {

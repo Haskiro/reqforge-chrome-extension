@@ -1,7 +1,4 @@
 .row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
   margin-bottom: 8px;
 }
 
@@ -18,18 +15,8 @@
 }
 
 .bodyEditor {
-  display: flex;
-  flex-direction: column;
   width: 100%;
-  gap: 8px;
   margin-bottom: 8px;
-}
-
-.bodyToolbar {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  align-items: center;
 }
 
 .langSelect {

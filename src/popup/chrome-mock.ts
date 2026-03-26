@@ -27,6 +27,11 @@ const chromeMock = {
   runtime: {
     sendMessage: () => Promise.resolve(),
     onMessage: { addListener: () => {} },
+    connect: () => ({
+      postMessage: () => {},
+      onDisconnect: { addListener: () => {} },
+      disconnect: () => {},
+    }),
   },
 };
 

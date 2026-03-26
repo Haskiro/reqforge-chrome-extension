@@ -1,6 +1,6 @@
 import { DeleteOutlined } from '@ant-design/icons';
 import CodeMirror from '@uiw/react-codemirror';
-import { Button, Input, Select } from 'antd';
+import { Button, Flex, Input, Select } from 'antd';
 
 import type { BodyLanguage, ModificationType, RuleModification } from '@/types';
 
@@ -43,8 +43,8 @@ export const ModificationRow = ({
 
   if (isReplaceBody) {
     return (
-      <div className={styles.bodyEditor}>
-        <div className={styles.bodyToolbar}>
+      <Flex vertical gap={8} className={styles.bodyEditor}>
+        <Flex gap={8} align="center">
           <Select
             className={styles.typeSelect}
             value={modification.type}
@@ -60,7 +60,7 @@ export const ModificationRow = ({
             }
           />
           <Button danger icon={<DeleteOutlined />} onClick={onDelete} />
-        </div>
+        </Flex>
         {modification.bodyLanguage === 'formdata' && (
           <div className={styles.formdataHint}>{FORMDATA_HINT}</div>
         )}
@@ -73,12 +73,12 @@ export const ModificationRow = ({
             basicSetup={{ lineNumbers: true, foldGutter: false }}
           />
         </div>
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div className={styles.row}>
+    <Flex gap={8} align="center" className={styles.row}>
       <Select
         className={styles.typeSelect}
         value={modification.type}
@@ -102,6 +102,6 @@ export const ModificationRow = ({
         onChange={(e) => onChange({ ...modification, value: e.target.value })}
       />
       <Button danger icon={<DeleteOutlined />} onClick={onDelete} />
-    </div>
+    </Flex>
   );
 };

@@ -1,3 +1,4 @@
+import { Flex, Space } from 'antd';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,10 +13,10 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
   const navigate = useNavigate();
 
   return (
-    <div className={styles.appBar}>
-      <div className={styles.appBarLeft}>
+    <Flex align="center" justify="space-between" className={styles.appBar}>
+      <Space size={16} align="center">
         <div className={styles.logo} />
-        <nav className={styles.nav}>
+        <Space size={24} align="center" className={styles.nav}>
           <span
             className={`${styles.navItem} ${active === 'rules' ? styles.navItemActive : ''}`}
             onClick={() => navigate('/rules')}
@@ -40,12 +41,12 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
           >
             Помощь
           </span>
-        </nav>
-      </div>
-      <div className={styles.appBarRight}>
+        </Space>
+      </Space>
+      <Space size={8} align="center">
         {rightExtra}
         <div className={styles.avatar}>П</div>
-      </div>
-    </div>
+      </Space>
+    </Flex>
   );
 };
