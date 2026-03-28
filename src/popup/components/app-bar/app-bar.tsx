@@ -13,6 +13,7 @@ type AppBarProps = {
 
 export const AppBar = ({ active, rightExtra }: AppBarProps) => {
   const navigate = useNavigate();
+  const trafficCount = useAppSelector((s) => s.traffic.entries.length);
   const repeatCount = useAppSelector((s) => s.repeat.entries.length);
 
   return (
@@ -30,7 +31,9 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
             className={`${styles.navItem} ${active === 'traffic' ? styles.navItemActive : ''}`}
             onClick={() => navigate('/traffic')}
           >
-            Трафик
+            <Badge count={trafficCount} size="small" offset={[6, -2]}>
+              Трафик
+            </Badge>
           </span>
           <span
             className={`${styles.navItem} ${active === 'repeat' ? styles.navItemActive : ''}`}

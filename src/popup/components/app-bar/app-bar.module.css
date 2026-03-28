@@ -24,11 +24,13 @@
   padding: 4px 0;
 }
 
-.navItem:hover {
+.navItem:hover,
+.navItem:hover :global(.ant-badge) {
   color: #1677ff;
 }
 
-.navItemActive {
+.navItemActive,
+.navItemActive :global(.ant-badge) {
   color: #1677ff;
 }
 
