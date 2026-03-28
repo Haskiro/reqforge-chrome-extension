@@ -1,8 +1,21 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { AutoComplete, Button, Flex, Form, Input, Select, Typography } from 'antd';
+import { Alert, AutoComplete, Button, Flex, Form, Input, Select, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
+import {
+  resolveGroupPayload,
+  serverGroupToLocal,
+  serverRuleToLocal,
+  toModificationsPayload,
+} from '@/services/rulesApiMapper';
 import { useAppDispatch, useAppSelector } from '@/store';
+import type { ServerRule } from '@/store/api';
+import {
+  useCreateBackgroundRuleMutation,
+  useCreateStoppingRuleMutation,
+  useUpdateBackgroundRuleMutation,
+  useUpdateStoppingRuleMutation,
+} from '@/store/api';
 import {
   addGroup,
   addRule,
@@ -11,8 +24,10 @@ import {
   RULE_TYPES,
   setSelectedRuleId,
   updateRule,
+  upsertGroupFromServer,
+  upsertRuleFromServer,
 } from '@/store/rulesSlice';
-import { selectRulesState } from '@/store/selectors';
+import { selectAuth, selectRulesState } from '@/store/selectors';
 import type { RuleDirection, RuleModification } from '@/types';
 
 import styles from '../rules-page.module.css';
@@ -26,41 +41,39 @@ import { ModificationsModal } from './modifications-modal';
 
 export const RuleForm = () => {
   const dispatch = useAppDispatch();
-  const {
-    rules,
-    interactiveGroups,
-    backgroundGroups,
-    selectedRuleId,
-    selectionVersion,
-    activeMode,
-  } = useAppSelector(selectRulesState);
+  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } =
+    useAppSelector(selectRulesState);
+  const { mode: authMode } = useAppSelector(selectAuth);
   const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [form] = Form.useForm<RuleFormValues>();
   const [modifications, setModifications] = useState<RuleModification[]>([]);
   const direction = Form.useWatch('direction', form) as RuleDirection | undefined;
   const [modsError, setModsError] = useState(false);
   const [modsModalOpen, setModsModalOpen] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [createStoppingRule] = useCreateStoppingRuleMutation();
+  const [createBackgroundRule] = useCreateBackgroundRuleMutation();
+  const [updateStoppingRule] = useUpdateStoppingRuleMutation();
+  const [updateBackgroundRule] = useUpdateBackgroundRuleMutation();
 
   const selectedRule = rules.find((r) => r.id === selectedRuleId) ?? null;
 
-  const [prevSelectionVersion, setPrevSelectionVersion] = useState(selectionVersion);
-  if (selectionVersion !== prevSelectionVersion) {
-    setPrevSelectionVersion(selectionVersion);
+  useEffect(() => {
     setModifications(selectedRule?.modifications ?? []);
     setModsError(false);
     setModsModalOpen(false);
-  }
-
-  useEffect(() => {
+    setApiError(null);
     if (selectedRule) {
       const group = groups.find((g) => g.id === selectedRule.groupId);
       form.setFieldsValue({ ...selectedRule, groupName: group?.name ?? '' });
     } else {
       form.resetFields();
-      form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
+      form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : undefined });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectionVersion]);
+  }, [selectedRuleId, activeMode]);
 
   const resolveGroup = (groupName: string, gs: typeof groups): { id: string; isNew: boolean } => {
     const trimmedName = groupName?.trim();
@@ -73,9 +86,78 @@ export const RuleForm = () => {
     };
   };
 
-  const handleSave = (values: RuleFormValues) => {
+  const resetForm = () => {
+    form.resetFields();
+    form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : undefined });
+    setModifications([]);
+    setModsError(false);
+    setModsModalOpen(false);
+    setApiError(null);
+  };
+
+  const handleSave = async (values: RuleFormValues) => {
     if (activeMode === 'background' && modifications.length === 0) {
       setModsError(true);
+      return;
+    }
+
+    if (authMode === 'authenticated') {
+      setIsSaving(true);
+      const groupPayload = resolveGroupPayload(values.groupName, groups);
+      const baseDto = {
+        name: values.name,
+        method: values.method,
+        value: values.value,
+        ruleTypeId: values.ruleTypeId,
+        ...groupPayload,
+      };
+      try {
+        let serverRule: ServerRule;
+        if (selectedRule) {
+          if (selectedRule.mode === 'background') {
+            serverRule = await updateBackgroundRule({
+              id: Number(selectedRule.id),
+              ...baseDto,
+              direction: values.direction as 'REQUEST' | 'RESPONSE',
+              modifications: toModificationsPayload(modifications),
+            }).unwrap();
+          } else {
+            serverRule = await updateStoppingRule({
+              id: Number(selectedRule.id),
+              ...baseDto,
+              direction: values.direction,
+            }).unwrap();
+          }
+        } else {
+          if (activeMode === 'background') {
+            serverRule = await createBackgroundRule({
+              ...baseDto,
+              direction: values.direction as 'REQUEST' | 'RESPONSE',
+              modifications: toModificationsPayload(modifications),
+            }).unwrap();
+          } else {
+            serverRule = await createStoppingRule({
+              ...baseDto,
+              direction: values.direction,
+            }).unwrap();
+          }
+        }
+        if (serverRule.group) {
+          dispatch(
+            upsertGroupFromServer({
+              group: serverGroupToLocal(serverRule.group),
+              variant: serverRule.group.variant,
+            }),
+          );
+        }
+        dispatch(upsertRuleFromServer(serverRuleToLocal(serverRule)));
+        dispatch(setSelectedRuleId(null));
+        resetForm();
+      } catch {
+        setApiError('Не удалось сохранить правило');
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
 
@@ -88,18 +170,7 @@ export const RuleForm = () => {
       dispatch(addRule({ ...values, groupId, enabled: true, mode: activeMode, modifications }));
     }
     dispatch(setSelectedRuleId(null));
-    form.resetFields();
-    setModifications([]);
-    setModsError(false);
-    setModsModalOpen(false);
-  };
-
-  const handleClear = () => {
-    form.resetFields();
-    form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
-    setModifications([]);
-    setModsError(false);
-    setModsModalOpen(false);
+    resetForm();
   };
 
   const groupOptions = groups.map((g) => ({ value: g.name }));
@@ -117,16 +188,18 @@ export const RuleForm = () => {
           style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
           onClick={() => {
             dispatch(setSelectedRuleId(null));
-            form.resetFields();
-            form.setFieldsValue({ direction: activeMode === 'interactive' ? 'ANY' : 'REQUEST' });
-            setModifications([]);
-            setModsError(false);
-            setModsModalOpen(false);
+            resetForm();
           }}
         />
       </Flex>
 
-      <Form form={form} layout="vertical" onFinish={handleSave} className={styles.form}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(v: RuleFormValues) => void handleSave(v)}
+        className={styles.form}
+      >
+        {apiError && <Alert type="error" title={apiError} style={{ marginBottom: 12 }} />}
         <Form.Item
           label="Группа"
           name="groupName"
@@ -176,6 +249,7 @@ export const RuleForm = () => {
           rules={[{ required: true, message: 'Выберите направление' }]}
         >
           <Select
+            placeholder="Направление"
             options={
               activeMode === 'interactive'
                 ? INTERACTIVE_DIRECTION_OPTIONS
@@ -214,10 +288,12 @@ export const RuleForm = () => {
         )}
 
         <Flex gap={8} justify="flex-end" className={styles.formFooter}>
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit" loading={isSaving}>
             Сохранить
           </Button>
-          <Button onClick={handleClear}>Очистить</Button>
+          <Button onClick={resetForm} disabled={isSaving}>
+            Очистить
+          </Button>
         </Flex>
       </Form>
     </div>

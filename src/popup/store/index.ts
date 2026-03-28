@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { savePersistedRules } from '@/services/rulesStorage';
 
+import { api } from './api';
 import authReducer from './authSlice';
 import repeatReducer from './repeatSlice';
 import rulesReducer from './rulesSlice';
@@ -15,7 +16,9 @@ export const store = configureStore({
     rules: rulesReducer,
     traffic: trafficReducer,
     repeat: repeatReducer,
+    [api.reducerPath]: api.reducer,
   },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
 });
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;

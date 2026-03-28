@@ -9,7 +9,7 @@ import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from './store';
 import { loadAuthMode } from './store/authSlice';
-import { loadRulesFromStorage } from './store/rulesSlice';
+import { loadRulesFromServer, loadRulesFromStorage } from './store/rulesSlice';
 import { selectAuth, selectRulesState } from './store/selectors';
 
 export const App = () => {
@@ -19,8 +19,12 @@ export const App = () => {
 
   useEffect(() => {
     const init = async () => {
-      await dispatch(loadAuthMode());
-      await dispatch(loadRulesFromStorage());
+      const authResult = await dispatch(loadAuthMode());
+      if (loadAuthMode.fulfilled.match(authResult) && authResult.payload.mode === 'authenticated') {
+        await dispatch(loadRulesFromServer(authResult.payload.token!));
+      } else {
+        await dispatch(loadRulesFromStorage());
+      }
     };
     void init();
   }, [dispatch]);
