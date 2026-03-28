@@ -1,7 +1,7 @@
 import { AppBar } from '@components/app-bar';
 import { parseRawText, parseRequestFirstLine } from '@pages/modify-request-page/helpers';
 import type { RepeatResponse } from '@shared/messages';
-import { Button, Layout, Splitter, Tabs, Typography } from 'antd';
+import { Button, Flex, Layout, Splitter, Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -146,9 +146,11 @@ export const RepeatPage = () => {
           )}
 
           <Layout.Footer className={styles.footer}>
-            <Button type="primary" loading={activeEs?.isSending ?? false} onClick={handleSend}>
-              Отправить
-            </Button>
+            <Flex justify="flex-end">
+              <Button type="primary" loading={activeEs?.isSending ?? false} onClick={handleSend}>
+                Отправить
+              </Button>
+            </Flex>
           </Layout.Footer>
         </>
       )}

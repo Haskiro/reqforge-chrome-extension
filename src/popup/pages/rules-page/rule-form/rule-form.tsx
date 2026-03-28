@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { AutoComplete, Button, Form, Input, Select, Typography } from 'antd';
+import { AutoComplete, Button, Flex, Form, Input, Select, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -105,7 +105,7 @@ export const RuleForm = () => {
 
   return (
     <div className={styles.rightPanel}>
-      <div className={styles.formHeader}>
+      <Flex align="center" justify="space-between" className={styles.formHeader}>
         <Typography.Title level={5} style={{ margin: 0 }}>
           {selectedRule ? 'Редактирование' : 'Создание'}
         </Typography.Title>
@@ -123,7 +123,7 @@ export const RuleForm = () => {
             setModsModalOpen(false);
           }}
         />
-      </div>
+      </Flex>
 
       <Form form={form} layout="vertical" onFinish={handleSave} className={styles.form}>
         <Form.Item
@@ -212,12 +212,12 @@ export const RuleForm = () => {
           </>
         )}
 
-        <div className={styles.formFooter}>
+        <Flex gap={8} justify="flex-end" className={styles.formFooter}>
           <Button type="primary" htmlType="submit">
             Сохранить
           </Button>
           <Button onClick={handleClear}>Очистить</Button>
-        </div>
+        </Flex>
       </Form>
     </div>
   );

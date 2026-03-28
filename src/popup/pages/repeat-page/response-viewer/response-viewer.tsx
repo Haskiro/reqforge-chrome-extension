@@ -1,6 +1,6 @@
 import { tryPrettify } from '@pages/modify-request-page/helpers';
 import CodeMirror from '@uiw/react-codemirror';
-import { Alert, Table, Tag, Typography } from 'antd';
+import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 import { getExtensions } from '@/shared/helpers';
@@ -30,11 +30,11 @@ const headerColumns: ColumnsType<HeaderRow> = [
 export const ResponseViewer = ({ response }: ResponseViewerProps) => {
   if (response === null) {
     return (
-      <div className={styles.placeholder}>
+      <Flex align="center" justify="center" className={styles.placeholder}>
         <Typography.Text type="secondary">
           Нажмите «Отправить» для выполнения запроса
         </Typography.Text>
-      </div>
+      </Flex>
     );
   }
 
@@ -62,12 +62,12 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
   })();
 
   return (
-    <div className={styles.viewer}>
-      <div className={styles.statusRow}>
+    <Flex vertical gap={16} className={styles.viewer}>
+      <Flex align="center" gap={8}>
         <Tag color={statusColor(response.status)}>{response.status}</Tag>
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical gap={8}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Заголовки
         </Typography.Title>
@@ -80,9 +80,9 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
           pagination={false}
           scroll={{ y: 150 }}
         />
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical gap={8}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Тело
         </Typography.Title>
@@ -95,7 +95,7 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
             basicSetup={{ lineNumbers: true, foldGutter: false }}
           />
         </div>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 };
