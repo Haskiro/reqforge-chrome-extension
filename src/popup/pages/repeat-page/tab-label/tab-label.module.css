@@ -1,0 +1,26 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editIcon {
+  font-size: 10px;
+  opacity: 0;
+  color: inherit;
+  transition: opacity 0.15s;
+}
+
+.wrapper:hover .editIcon {
+  opacity: 0.6;
+}
+
+.input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 0;
+  min-width: 4ch;
+}

@@ -1,0 +1,46 @@
+.page {
+  height: 100%;
+  background: #fff;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.tabsNav :global(.ant-tabs-nav) {
+  margin-bottom: 0;
+  padding: 0 14px;
+}
+
+.tabsNav :global(.ant-tabs-content-holder) {
+  display: none;
+}
+
+.splitter {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.requestPanel {
+  overflow-y: auto;
+  height: 100%;
+}
+
+.responsePanel {
+  height: 100%;
+  border-left: 1px solid #f0f0f0;
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}

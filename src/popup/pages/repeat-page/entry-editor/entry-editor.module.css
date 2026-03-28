@@ -1,0 +1,31 @@
+.fieldsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+}
+
+.bodyToolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.langSelect {
+  width: 140px;
+}
+
+.editorWrapper {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+}

@@ -8,7 +8,7 @@ const manifest = defineManifest({
   manifest_version: 3,
   name: 'ReqForge',
   version: '1.0.0',
-  permissions: ['storage', 'tabs', 'windows', 'debugger'],
+  permissions: ['storage', 'tabs', 'windows', 'debugger', 'scripting'],
   host_permissions: ['<all_urls>'],
   background: { service_worker: 'src/background/service-worker.ts', type: 'module' },
   // No default_popup — we open a persistent window via chrome.action.onClicked
