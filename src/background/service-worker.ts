@@ -1075,11 +1075,21 @@ async function cleanupTabMaps(tabId: number): Promise<void> {
   await saveCdpMaps();
 }
 
+// Serialise all storage mutations so concurrent requests don't overwrite each other
+let storageQueue = Promise.resolve();
+
+const enqueueStorage = (task: () => Promise<void>): Promise<void> => {
+  storageQueue = storageQueue.then(task);
+  return storageQueue;
+};
+
 async function upsertEntry(entry: StoredEntry): Promise<void> {
-  const result = await chrome.storage.local.get('entries');
-  const existing: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
-  const updated = [entry, ...existing.filter((e) => e.id !== entry.id)].slice(0, 100);
-  await chrome.storage.local.set({ entries: updated });
+  return enqueueStorage(async () => {
+    const result = await chrome.storage.local.get('entries');
+    const existing: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
+    const updated = [entry, ...existing.filter((e) => e.id !== entry.id)].slice(0, 100);
+    await chrome.storage.local.set({ entries: updated });
+  });
 }
 
 async function deleteEntry(id: string): Promise<void> {
@@ -1087,8 +1097,10 @@ async function deleteEntry(id: string): Promise<void> {
 }
 
 async function deleteEntries(ids: string[]): Promise<void> {
-  const idSet = new Set(ids);
-  const result = await chrome.storage.local.get('entries');
-  const existing: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
-  await chrome.storage.local.set({ entries: existing.filter((e) => !idSet.has(e.id)) });
+  return enqueueStorage(async () => {
+    const idSet = new Set(ids);
+    const result = await chrome.storage.local.get('entries');
+    const existing: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
+    await chrome.storage.local.set({ entries: existing.filter((e) => !idSet.has(e.id)) });
+  });
 }
