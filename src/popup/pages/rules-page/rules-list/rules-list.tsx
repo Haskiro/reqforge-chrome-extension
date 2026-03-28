@@ -1,6 +1,6 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { CollapseProps } from 'antd';
-import { Button, Collapse, Switch, Tabs } from 'antd';
+import { Button, Collapse, Flex, Space, Switch, Tabs } from 'antd';
 import { useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -46,7 +46,7 @@ export const RulesList = () => {
     return {
       key: group.id,
       label: (
-        <div className={styles.groupLabel}>
+        <Flex align="center" gap={8}>
           <div onClick={(e) => e.stopPropagation()}>
             <Switch
               size="small"
@@ -59,11 +59,11 @@ export const RulesList = () => {
             />
           </div>
           <span className={styles.groupName}>{group.name}</span>
-        </div>
+        </Flex>
       ),
       extra:
         group.id !== DEFAULT_GROUP_ID && group.id !== DEFAULT_BACKGROUND_GROUP_ID ? (
-          <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+          <Space size={4} onClick={(e) => e.stopPropagation()}>
             <Button
               color="primary"
               shape="circle"
@@ -79,13 +79,13 @@ export const RulesList = () => {
               icon={<DeleteOutlined />}
               onClick={() => setDeletingGroup(group)}
             />
-          </div>
+          </Space>
         ) : null,
       children:
         groupRules.length === 0 ? (
           <div className={styles.emptyGroup}>Нет правил в этой группе</div>
         ) : (
-          <div className={styles.rulesList}>
+          <Flex vertical gap={2}>
             {groupRules.map((rule) => (
               <RuleRow
                 key={rule.id}
@@ -96,7 +96,7 @@ export const RulesList = () => {
                 onToggle={() => dispatch(toggleRule(rule.id))}
               />
             ))}
-          </div>
+          </Flex>
         ),
     };
   });

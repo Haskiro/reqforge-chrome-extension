@@ -6,7 +6,7 @@ import {
   parseRequestFirstLine,
 } from '@pages/modify-request-page/helpers';
 import CodeMirror from '@uiw/react-codemirror';
-import { Input, Select, Space, Tabs, Typography } from 'antd';
+import { Flex, Input, Select, Space, Tabs, Typography } from 'antd';
 
 import { BODY_LANGUAGES, HTTP_METHOD_VALUES } from '@/shared/constants';
 import { getExtensions } from '@/shared/helpers';
@@ -45,8 +45,8 @@ export const EntryEditor = ({ editState, onChange }: EntryEditorProps) => {
   const methodOptions = HTTP_METHOD_VALUES.map((m) => ({ value: m, label: m }));
 
   const fieldsTab = (
-    <div className={styles.fieldsContent}>
-      <div className={styles.section}>
+    <Flex vertical gap={16}>
+      <Flex vertical className={styles.section}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Адрес
         </Typography.Title>
@@ -59,27 +59,27 @@ export const EntryEditor = ({ editState, onChange }: EntryEditorProps) => {
           />
           <Input value={url} onChange={(e) => onChange({ url: e.target.value })} />
         </Space.Compact>
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical className={styles.section}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Заголовки
         </Typography.Title>
         <HeadersTable headers={headers} onChange={(h) => onChange({ headers: h })} />
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical className={styles.section}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Тело
         </Typography.Title>
-        <div className={styles.bodyToolbar}>
+        <Flex gap={8} align="center">
           <Select
             className={styles.langSelect}
             value={bodyLanguage}
             options={BODY_LANGUAGES}
             onChange={(lang: BodyLanguage) => onChange({ bodyLanguage: lang })}
           />
-        </div>
+        </Flex>
         <div className={styles.editorWrapper}>
           <CodeMirror
             value={body}
@@ -89,12 +89,12 @@ export const EntryEditor = ({ editState, onChange }: EntryEditorProps) => {
             basicSetup={{ lineNumbers: true, foldGutter: false }}
           />
         </div>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 
   const rawTab = (
-    <div className={styles.section}>
+    <Flex vertical className={styles.section}>
       <div className={styles.editorWrapper}>
         <CodeMirror
           value={rawText}
@@ -103,7 +103,7 @@ export const EntryEditor = ({ editState, onChange }: EntryEditorProps) => {
           basicSetup={{ lineNumbers: true, foldGutter: false }}
         />
       </div>
-    </div>
+    </Flex>
   );
 
   return (

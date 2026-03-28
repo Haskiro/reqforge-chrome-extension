@@ -1,6 +1,6 @@
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import CodeMirror from '@uiw/react-codemirror';
-import { Button, Input, InputNumber, Layout, Select, Space, Tabs, Typography } from 'antd';
+import { Button, Flex, Input, InputNumber, Layout, Select, Space, Tabs, Typography } from 'antd';
 import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -128,13 +128,13 @@ export const ModifyRequestPage = () => {
   const methodOptions = HTTP_METHOD_VALUES.map((m) => ({ value: m, label: m }));
 
   const fieldsTab = (
-    <div className={styles.fieldsContent}>
-      <div className={styles.section}>
+    <Flex vertical gap={16} className={styles.fieldsContent}>
+      <Flex vertical gap={8}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Адрес
         </Typography.Title>
         {isResponse ? (
-          <div className={styles.urlRow}>
+          <Flex gap={8} align="center">
             <Input value={url} disabled className={styles.urlInput} />
             <InputNumber
               className={styles.statusInput}
@@ -143,7 +143,7 @@ export const ModifyRequestPage = () => {
               min={100}
               max={599}
             />
-          </div>
+          </Flex>
         ) : (
           <Space.Compact>
             <Select
@@ -155,27 +155,27 @@ export const ModifyRequestPage = () => {
             <Input value={url} onChange={(e) => setUrl(e.target.value)} />
           </Space.Compact>
         )}
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical gap={8}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Заголовки
         </Typography.Title>
         <HeadersTable headers={headers} onChange={setHeaders} />
-      </div>
+      </Flex>
 
-      <div className={styles.section}>
+      <Flex vertical gap={8}>
         <Typography.Title level={5} className={styles.sectionTitle}>
           Тело
         </Typography.Title>
-        <div className={styles.bodyToolbar}>
+        <Flex gap={8} align="center">
           <Select
             className={styles.langSelect}
             value={bodyLanguage}
             options={BODY_LANGUAGES}
             onChange={(lang: BodyLanguage) => setBodyLanguage(lang)}
           />
-        </div>
+        </Flex>
         <div className={styles.editorWrapper}>
           <CodeMirror
             value={body}
@@ -185,12 +185,12 @@ export const ModifyRequestPage = () => {
             basicSetup={{ lineNumbers: true, foldGutter: false }}
           />
         </div>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 
   const rawTab = (
-    <div className={styles.section}>
+    <Flex vertical gap={8}>
       <div className={styles.editorWrapper}>
         <CodeMirror
           value={rawText}
@@ -199,22 +199,22 @@ export const ModifyRequestPage = () => {
           basicSetup={{ lineNumbers: true, foldGutter: false }}
         />
       </div>
-    </div>
+    </Flex>
   );
 
   return (
     <Layout className={styles.page}>
-      <div className={styles.header}>
+      <Flex align="center" gap={8} className={styles.header}>
         <Button icon={<ArrowLeftOutlined />} type="text" onClick={handleCancel} />
-        <div className={styles.headerText}>
+        <Flex vertical gap={1} className={styles.headerText}>
           <span className={styles.headerTitle}>
             {isResponse ? 'Модификация ответа' : 'Модификация запроса'}
           </span>
           <span className={styles.headerSubtitle}>
             {entry.method} {entry.url}
           </span>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
       <Layout.Content className={styles.content}>
         <Tabs
           activeKey={activeTab}
@@ -226,10 +226,12 @@ export const ModifyRequestPage = () => {
         />
       </Layout.Content>
       <Layout.Footer className={styles.footer}>
-        <Button type="primary" onClick={handleSubmit}>
-          Отправить
-        </Button>
-        <Button onClick={handleCancel}>Отменить</Button>
+        <Flex justify="flex-end" gap={8}>
+          <Button type="primary" onClick={handleSubmit}>
+            Отправить
+          </Button>
+          <Button onClick={handleCancel}>Отменить</Button>
+        </Flex>
       </Layout.Footer>
     </Layout>
   );
