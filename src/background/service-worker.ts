@@ -1,6 +1,6 @@
 import type { Rule, StoredEntry } from '@/types';
 
-import type { PopupToWorker } from '../shared/messages';
+import type { PopupToWorker, RepeatResponse } from '../shared/messages';
 import { findBackgroundMods, hasInteractiveMatch } from '../shared/ruleMatcher';
 
 // ── Window management ─────────────────────────────────────────────────────────
@@ -422,14 +422,8 @@ async function handleRequestPaused(
   networkId: string | null,
   request: { url: string; method: string; headers: Record<string, string>; postData?: string },
 ): Promise<void> {
-  if (popupWindowId == null) {
-    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
-      requestId: cdpRequestId,
-    });
-    return;
-  }
-
-  // Auto-continue CORS preflight requests
+  // Auto-continue CORS preflight requests before anything else so they never
+  // consume a replaySkipUrls count or get stored in traffic
   if (request.method === 'OPTIONS') {
     try {
       await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
@@ -438,6 +432,25 @@ async function handleRequestPaused(
     } catch (e) {
       console.warn('[RF:sw] continueRequest (OPTIONS) failed:', e);
     }
+    return;
+  }
+
+  // Auto-continue replay requests without storing them in traffic
+  if (replaySkipUrls.has(request.url)) {
+    const remaining = (replaySkipUrls.get(request.url) ?? 1) - 1;
+    if (remaining <= 0) replaySkipUrls.delete(request.url);
+    else replaySkipUrls.set(request.url, remaining);
+    replaySkipRequestIds.add(cdpRequestId);
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+      requestId: cdpRequestId,
+    });
+    return;
+  }
+
+  if (popupWindowId == null) {
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', {
+      requestId: cdpRequestId,
+    });
     return;
   }
 
@@ -507,6 +520,14 @@ async function handleResponsePaused(
   statusCode: number,
   responseHeaders: Array<{ name: string; value: string }>,
 ): Promise<void> {
+  if (replaySkipRequestIds.has(cdpRequestId)) {
+    replaySkipRequestIds.delete(cdpRequestId);
+    await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
+      requestId: cdpRequestId,
+    });
+    return;
+  }
+
   if (popupWindowId == null) {
     await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueResponse', {
       requestId: cdpRequestId,
@@ -663,6 +684,9 @@ chrome.runtime.onMessage.addListener((msg: PopupToWorker, _sender, sendResponse)
       await handleRejectMany(msg);
     } else if (msg.type === 'APPLY_RESPONSE_MANY') {
       await handleApplyResponseMany(msg);
+    } else if (msg.type === 'REPEAT') {
+      await handleRepeat(msg, sendResponse);
+      return;
     }
     sendResponse({ ok: true });
   })();
@@ -868,6 +892,134 @@ async function handleProceedMany(
   );
   await deleteEntries(entries.map((e) => e.id));
   console.log(`[RF:sw] proceeded ${entries.length} entries`);
+}
+
+const FORBIDDEN_HEADERS = new Set([
+  'accept-charset',
+  'accept-encoding',
+  'access-control-request-headers',
+  'access-control-request-method',
+  'connection',
+  'content-length',
+  'cookie2',
+  'date',
+  'dnt',
+  'expect',
+  'host',
+  'keep-alive',
+  'origin',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'via',
+]);
+
+const filterHeaders = (headers: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(headers).filter(
+      ([k]) =>
+        !FORBIDDEN_HEADERS.has(k.toLowerCase()) &&
+        !k.toLowerCase().startsWith('proxy-') &&
+        !k.toLowerCase().startsWith('sec-'),
+    ),
+  );
+
+type FetchResult = { status: number; headers: Record<string, string>; body: string };
+
+// URLs currently being replayed via tabFetch — CDP should auto-continue these without storing them
+const replaySkipUrls = new Map<string, number>();
+// CDP request IDs of replayed requests — responses should also be auto-continued
+const replaySkipRequestIds = new Set<string>();
+
+const tabFetch = async (
+  tabId: number,
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string | undefined,
+): Promise<FetchResult> => {
+  const count = replaySkipUrls.get(url) ?? 0;
+  replaySkipUrls.set(url, count + 1);
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: async (
+        fetchUrl: string,
+        fetchMethod: string,
+        fetchHeaders: Record<string, string>,
+        fetchBody: string | null,
+      ): Promise<FetchResult> => {
+        const init: RequestInit = { method: fetchMethod, headers: fetchHeaders };
+        if (fetchBody && !['GET', 'HEAD'].includes(fetchMethod)) init.body = fetchBody;
+        const r = await fetch(fetchUrl, init);
+        const rb = await r.text();
+        const rh: Record<string, string> = {};
+        r.headers.forEach((v, k) => {
+          rh[k] = v;
+        });
+        return { status: r.status, headers: rh, body: rb };
+      },
+      args: [url, method, headers, body ?? null],
+    });
+    const result = results[0].result;
+    if (!result) throw new Error('executeScript returned no result');
+    return result;
+  } finally {
+    const remaining = (replaySkipUrls.get(url) ?? 1) - 1;
+    if (remaining <= 0) replaySkipUrls.delete(url);
+    else replaySkipUrls.set(url, remaining);
+  }
+};
+
+const swFetch = async (
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string | undefined,
+): Promise<FetchResult> => {
+  const init: RequestInit = { method, headers };
+  if (body && !['GET', 'HEAD'].includes(method)) init.body = body;
+  const r = await fetch(url, init);
+  const rb = await r.text();
+  const rh: Record<string, string> = {};
+  r.headers.forEach((v, k) => {
+    rh[k] = v;
+  });
+  return { status: r.status, headers: rh, body: rb };
+};
+
+async function handleRepeat(
+  msg: Extract<PopupToWorker, { type: 'REPEAT' }>,
+  sendResponse: (r: RepeatResponse) => void,
+): Promise<void> {
+  const url = msg.editedUrl ?? msg.entry.url;
+  const method = msg.editedMethod ?? msg.entry.method;
+  const rawHeaders = msg.editedHeaders ?? msg.entry.requestHeaders;
+  const headers = filterHeaders(rawHeaders);
+  const body = msg.editedBody ?? msg.entry.requestBody;
+
+  try {
+    let result: FetchResult;
+    if (msg.entry.tabId != null && attachedTabs.has(msg.entry.tabId)) {
+      try {
+        result = await tabFetch(msg.entry.tabId, url, method, headers, body);
+      } catch {
+        result = await swFetch(url, method, headers, body);
+      }
+    } else {
+      result = await swFetch(url, method, headers, body);
+    }
+
+    sendResponse({
+      ok: true,
+      status: result.status,
+      headers: result.headers,
+      body: result.body,
+    });
+  } catch (e) {
+    sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

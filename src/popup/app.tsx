@@ -1,6 +1,7 @@
 import { ChooseAuthPage } from '@pages/choose-auth-page';
 import { HelpPage } from '@pages/help-page';
 import { ModifyRequestPage } from '@pages/modify-request-page';
+import { RepeatPage } from '@pages/repeat-page';
 import { RulesPage } from '@pages/rules-page';
 import { TrafficPage } from '@pages/traffic-page';
 import { useEffect } from 'react';
@@ -50,6 +51,7 @@ export const App = () => {
         <Route path="/rules" element={<RulesPage />} />
         <Route path="/traffic" element={<TrafficPage />} />
         <Route path="/modify-request" element={<ModifyRequestPage />} />
+        <Route path="/repeat" element={<RepeatPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to="/choose-auth" replace />} />
       </Routes>

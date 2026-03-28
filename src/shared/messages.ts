@@ -20,4 +20,21 @@ export type PopupToWorker =
   | { type: 'REJECT'; entryId: string }
   | { type: 'REJECT_MANY'; entryIds: string[] }
   | { type: 'PROCEED_MANY'; entries: StoredEntry[] }
-  | { type: 'APPLY_RESPONSE_MANY'; entryIds: string[] };
+  | { type: 'APPLY_RESPONSE_MANY'; entryIds: string[] }
+  | {
+      type: 'REPEAT';
+      entry: StoredEntry;
+      editedUrl?: string;
+      editedMethod?: string;
+      editedHeaders?: Record<string, string>;
+      editedBody?: string;
+    };
+
+export type RepeatResponse =
+  | {
+      ok: true;
+      status: number;
+      headers: Record<string, string>;
+      body: string;
+    }
+  | { ok: false; error: string };

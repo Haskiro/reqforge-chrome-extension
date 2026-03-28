@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { savePersistedRules } from '@/services/rulesStorage';
 
 import authReducer from './authSlice';
+import repeatReducer from './repeatSlice';
 import rulesReducer from './rulesSlice';
 import trafficReducer from './trafficSlice';
 
@@ -13,6 +14,7 @@ export const store = configureStore({
     auth: authReducer,
     rules: rulesReducer,
     traffic: trafficReducer,
+    repeat: repeatReducer,
   },
 });
 

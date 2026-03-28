@@ -1,6 +1,8 @@
-import { Flex, Space } from 'antd';
+import { Badge, Flex, Space } from 'antd';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { useAppSelector } from '@/store';
 
 import styles from './app-bar.module.css';
 
@@ -11,6 +13,7 @@ type AppBarProps = {
 
 export const AppBar = ({ active, rightExtra }: AppBarProps) => {
   const navigate = useNavigate();
+  const repeatCount = useAppSelector((s) => s.repeat.entries.length);
 
   return (
     <Flex align="center" justify="space-between" className={styles.appBar}>
@@ -33,7 +36,9 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
             className={`${styles.navItem} ${active === 'repeat' ? styles.navItemActive : ''}`}
             onClick={() => navigate('/repeat')}
           >
-            Повтор
+            <Badge count={repeatCount} size="small" offset={[6, -2]}>
+              Повтор
+            </Badge>
           </span>
           <span
             className={`${styles.navItem} ${active === 'help' ? styles.navItemActive : ''}`}

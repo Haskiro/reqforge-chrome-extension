@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useEntriesChange } from '@/shared/hooks';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { addRepeatEntries } from '@/store/repeatSlice';
 import { loadTrafficFromStorage, setTrafficEntries } from '@/store/trafficSlice';
 import type { StoredEntry } from '@/types';
 
@@ -70,7 +71,15 @@ export const TrafficPage = () => {
           disabled: !isPending && !isResponsePending,
           onClick: () => void navigate('/modify-request', { state: { entry } }),
         },
-        { key: 'repeat', label: 'Повторить', disabled: true },
+        {
+          key: 'repeat',
+          label: 'Повторить',
+          disabled: isResponsePending,
+          onClick: () => {
+            dispatch(addRepeatEntries([entry]));
+            void navigate('/repeat');
+          },
+        },
       ],
     };
   };
@@ -104,6 +113,14 @@ export const TrafficPage = () => {
     if (entry) void navigate('/modify-request', { state: { entry } });
   };
 
+  const handleRepeatSelected = () => {
+    const selected = entries.filter((e) => selectedRowKeys.includes(e.id));
+    if (selected.length > 0) {
+      dispatch(addRepeatEntries(selected));
+      void navigate('/repeat');
+    }
+  };
+
   const moreActions = {
     items: [
       {
@@ -112,7 +129,12 @@ export const TrafficPage = () => {
         disabled: selectedRowKeys.length !== 1,
         onClick: handleModifySelected,
       },
-      { key: 'repeat-all', label: 'Повторить', disabled: true },
+      {
+        key: 'repeat-all',
+        label: 'Повторить',
+        disabled: selectedRowKeys.length === 0,
+        onClick: handleRepeatSelected,
+      },
     ],
   };
 
