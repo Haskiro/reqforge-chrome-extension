@@ -12,6 +12,7 @@ import {
   setSelectedRuleId,
   updateRule,
 } from '@/store/rulesSlice';
+import { selectRulesState } from '@/store/selectors';
 import type { RuleDirection, RuleModification } from '@/types';
 
 import styles from '../rules-page.module.css';
@@ -32,7 +33,7 @@ export const RuleForm = () => {
     selectedRuleId,
     selectionVersion,
     activeMode,
-  } = useAppSelector((s) => s.rules);
+  } = useAppSelector(selectRulesState);
   const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [form] = Form.useForm<RuleFormValues>();
   const [modifications, setModifications] = useState<RuleModification[]>([]);

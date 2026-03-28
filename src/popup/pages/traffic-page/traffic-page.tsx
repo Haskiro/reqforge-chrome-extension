@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEntriesChange } from '@/shared/hooks';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { addRepeatEntries } from '@/store/repeatSlice';
+import { selectTrafficEntries } from '@/store/selectors';
 import { loadTrafficFromStorage, setTrafficEntries } from '@/store/trafficSlice';
 import type { StoredEntry } from '@/types';
 
@@ -18,7 +19,7 @@ import styles from './traffic-page.module.css';
 export const TrafficPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const entries = useAppSelector((s) => s.traffic.entries);
+  const entries = useAppSelector(selectTrafficEntries);
 
   const [searchValue, setSearchValue] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);

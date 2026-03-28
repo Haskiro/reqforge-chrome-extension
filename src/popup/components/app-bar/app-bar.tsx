@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAppSelector } from '@/store';
+import { selectRepeatEntryCount, selectTrafficEntryCount } from '@/store/selectors';
 
 import styles from './app-bar.module.css';
 
@@ -13,8 +14,8 @@ type AppBarProps = {
 
 export const AppBar = ({ active, rightExtra }: AppBarProps) => {
   const navigate = useNavigate();
-  const trafficCount = useAppSelector((s) => s.traffic.entries.length);
-  const repeatCount = useAppSelector((s) => s.repeat.entries.length);
+  const trafficCount = useAppSelector(selectTrafficEntryCount);
+  const repeatCount = useAppSelector(selectRepeatEntryCount);
 
   return (
     <Flex align="center" justify="space-between" className={styles.appBar}>
