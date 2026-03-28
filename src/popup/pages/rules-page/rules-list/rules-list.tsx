@@ -1,9 +1,10 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { CollapseProps } from 'antd';
-import { Button, Collapse, Flex, Space, Switch, Tabs } from 'antd';
+import { Button, Collapse, Flex, message, Space, Switch, Tabs } from 'antd';
 import { useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
+import { useDeleteGroupMutation, useDeleteRuleMutation, useUpdateGroupMutation } from '@/store/api';
 import {
   DEFAULT_BACKGROUND_GROUP_ID,
   DEFAULT_GROUP_ID,
@@ -13,8 +14,8 @@ import {
   setActiveMode,
   setSelectedRuleId,
   toggleRule,
-} from '@/store/rulesSlice.ts';
-import { selectRulesState } from '@/store/selectors';
+} from '@/store/rulesSlice';
+import { selectAuth, selectRulesState } from '@/store/selectors';
 import type { Group, RuleMode } from '@/types';
 
 import { DeleteGroupModal } from '../delete-group-modal';
@@ -27,14 +28,65 @@ export const RulesList = () => {
   const dispatch = useAppDispatch();
   const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } =
     useAppSelector(selectRulesState);
+  const { mode: authMode } = useAppSelector(selectAuth);
   const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
+  const [deleteRuleApi] = useDeleteRuleMutation();
+  const [updateGroupApi] = useUpdateGroupMutation();
+  const [deleteGroupApi] = useDeleteGroupMutation();
+
   const filteredRules = rules.filter((r) => r.mode === activeMode);
 
-  const handleDeleteConfirm = (moveToGroupId?: string) => {
+  const handleDeleteRule = async (ruleId: string) => {
+    if (authMode === 'authenticated') {
+      try {
+        await deleteRuleApi(Number(ruleId)).unwrap();
+      } catch {
+        void message.error('Не удалось удалить правило');
+        return;
+      }
+    }
+    dispatch(deleteRule(ruleId));
+  };
+
+  const handleRenameGroup = async (name: string) => {
+    if (!editingGroup) return;
+    if (authMode === 'authenticated') {
+      try {
+        await updateGroupApi({ id: Number(editingGroup.id), name }).unwrap();
+      } catch {
+        void message.error('Не удалось переименовать группу');
+        setEditingGroup(null);
+        return;
+      }
+    }
+    dispatch(renameGroup({ id: editingGroup.id, name }));
+    setEditingGroup(null);
+  };
+
+  const handleDeleteConfirm = async (moveToGroupId?: string) => {
     if (!deletingGroup) return;
+    if (authMode === 'authenticated') {
+      const isVirtualDefault =
+        moveToGroupId === DEFAULT_GROUP_ID || moveToGroupId === DEFAULT_BACKGROUND_GROUP_ID;
+      const serverMoveToGroupId = moveToGroupId
+        ? isVirtualDefault
+          ? null
+          : Number(moveToGroupId)
+        : undefined;
+      try {
+        await deleteGroupApi({
+          id: Number(deletingGroup.id),
+          ...(serverMoveToGroupId !== undefined ? { moveToGroupId: serverMoveToGroupId } : {}),
+        }).unwrap();
+      } catch {
+        void message.error('Не удалось удалить группу');
+        setDeletingGroup(null);
+        return;
+      }
+    }
     dispatch(deleteGroup({ id: deletingGroup.id, moveToGroupId }));
     setDeletingGroup(null);
   };
@@ -92,7 +144,7 @@ export const RulesList = () => {
                 rule={rule}
                 selected={selectedRuleId === rule.id}
                 onEdit={() => dispatch(setSelectedRuleId(rule.id))}
-                onDelete={() => dispatch(deleteRule(rule.id))}
+                onDelete={() => void handleDeleteRule(rule.id)}
                 onToggle={() => dispatch(toggleRule(rule.id))}
               />
             ))}
@@ -123,17 +175,14 @@ export const RulesList = () => {
         group={deletingGroup}
         otherGroups={groups.filter((g) => g.id !== deletingGroup?.id)}
         rulesCount={filteredRules.filter((r) => r.groupId === deletingGroup?.id).length}
-        onConfirm={handleDeleteConfirm}
+        onConfirm={(moveToGroupId) => void handleDeleteConfirm(moveToGroupId)}
         onCancel={() => setDeletingGroup(null)}
       />
 
       <EditGroupModal
         open={editingGroup !== null}
         group={editingGroup}
-        onConfirm={(name) => {
-          if (editingGroup) dispatch(renameGroup({ id: editingGroup.id, name }));
-          setEditingGroup(null);
-        }}
+        onConfirm={(name) => void handleRenameGroup(name)}
         onCancel={() => setEditingGroup(null)}
       />
     </div>

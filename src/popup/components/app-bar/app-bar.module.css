@@ -46,3 +46,7 @@
   font-size: 14px;
   flex-shrink: 0;
 }
+
+.avatarClickable {
+  cursor: pointer;
+}
