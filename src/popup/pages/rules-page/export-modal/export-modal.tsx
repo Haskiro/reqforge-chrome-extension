@@ -3,6 +3,7 @@ import type { Key } from 'react';
 import { useState } from 'react';
 
 import { useAppSelector } from '@/store';
+import { selectRulesState } from '@/store/selectors';
 
 import { buildTreeData, downloadJson } from './helpers';
 
@@ -12,7 +13,7 @@ export type ExportModalProps = {
 };
 
 export const ExportModal = ({ open, onClose }: ExportModalProps) => {
-  const { rules, interactiveGroups, backgroundGroups } = useAppSelector((s) => s.rules);
+  const { rules, interactiveGroups, backgroundGroups } = useAppSelector(selectRulesState);
   const [checkedKeys, setCheckedKeys] = useState<Key[]>(() => rules.map((r) => `rule-${r.id}`));
 
   const treeData = buildTreeData(interactiveGroups, backgroundGroups, rules);

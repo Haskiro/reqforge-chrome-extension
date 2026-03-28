@@ -6,6 +6,12 @@ import { useMemo, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { removeRepeatEntry, setActiveTabId, setRepeatResponse } from '@/store/repeatSlice';
+import {
+  selectRepeatActiveTabId,
+  selectRepeatEntries,
+  selectRepeatNames,
+  selectRepeatResponses,
+} from '@/store/selectors';
 import type { StoredEntry } from '@/types';
 
 import { EntryEditor } from './entry-editor';
@@ -15,11 +21,11 @@ import { ResponseViewer } from './response-viewer';
 
 export const RepeatPage = () => {
   const dispatch = useAppDispatch();
-  const entries = useAppSelector((s) => s.repeat.entries);
+  const entries = useAppSelector(selectRepeatEntries);
 
   const [editStates, setEditStates] = useState<Record<string, EntryEditState>>({});
-  const responses = useAppSelector((s) => s.repeat.responses);
-  const activeTabId = useAppSelector((s) => s.repeat.activeTabId);
+  const responses = useAppSelector(selectRepeatResponses);
+  const activeTabId = useAppSelector(selectRepeatActiveTabId);
 
   const effectiveActiveKey = useMemo(() => {
     if (entries.length === 0) return undefined;
@@ -97,7 +103,7 @@ export const RepeatPage = () => {
     }
   };
 
-  const names = useAppSelector((s) => s.repeat.names);
+  const names = useAppSelector(selectRepeatNames);
 
   const activeEntry = entries.find((e) => e.id === effectiveActiveKey);
   const activeEs = activeEntry ? getEditState(activeEntry) : null;

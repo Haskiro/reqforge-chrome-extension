@@ -14,6 +14,7 @@ import {
   setSelectedRuleId,
   toggleRule,
 } from '@/store/rulesSlice.ts';
+import { selectRulesState } from '@/store/selectors';
 import type { Group, RuleMode } from '@/types';
 
 import { DeleteGroupModal } from '../delete-group-modal';
@@ -24,9 +25,8 @@ import { MODE_TABS } from './constants';
 
 export const RulesList = () => {
   const dispatch = useAppDispatch();
-  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } = useAppSelector(
-    (s) => s.rules,
-  );
+  const { rules, interactiveGroups, backgroundGroups, selectedRuleId, activeMode } =
+    useAppSelector(selectRulesState);
   const groups = activeMode === 'interactive' ? interactiveGroups : backgroundGroups;
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);

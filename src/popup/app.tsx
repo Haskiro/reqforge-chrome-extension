@@ -10,11 +10,12 @@ import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './store';
 import { loadAuthMode } from './store/authSlice';
 import { loadRulesFromStorage } from './store/rulesSlice';
+import { selectAuth, selectRulesState } from './store/selectors';
 
 export const App = () => {
   const dispatch = useAppDispatch();
-  const { mode, loaded: authLoaded } = useAppSelector((s) => s.auth);
-  const { loaded: rulesLoaded } = useAppSelector((s) => s.rules);
+  const { mode, loaded: authLoaded } = useAppSelector(selectAuth);
+  const { loaded: rulesLoaded } = useAppSelector(selectRulesState);
 
   useEffect(() => {
     const init = async () => {
