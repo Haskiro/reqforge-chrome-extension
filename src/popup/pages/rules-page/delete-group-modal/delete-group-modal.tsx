@@ -41,6 +41,7 @@ export const DeleteGroupModal = ({
       okText="Удалить"
       cancelText="Отмена"
       okButtonProps={{ danger: true }}
+      centered={true}
     >
       <Typography.Paragraph>
         Вы уверены, что хотите удалить группу <strong>{group?.name}</strong>?

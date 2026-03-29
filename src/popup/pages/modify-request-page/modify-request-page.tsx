@@ -227,10 +227,10 @@ export const ModifyRequestPage = () => {
       </Layout.Content>
       <Layout.Footer className={styles.footer}>
         <Flex justify="flex-end" gap={8}>
+          <Button onClick={handleCancel}>Отменить</Button>
           <Button type="primary" onClick={handleSubmit}>
             Отправить
           </Button>
-          <Button onClick={handleCancel}>Отменить</Button>
         </Flex>
       </Layout.Footer>
     </Layout>

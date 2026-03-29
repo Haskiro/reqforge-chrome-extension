@@ -41,7 +41,7 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
   if (response.error) {
     return (
       <div className={styles.errorWrapper}>
-        <Alert type="error" message="Ошибка запроса" description={response.error} showIcon />
+        <Alert type="error" title="Ошибка запроса" description={response.error} showIcon />
       </div>
     );
   }

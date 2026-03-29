@@ -1,6 +1,8 @@
+import { UserOutlined } from '@ant-design/icons';
+import logo from '@assets/logo.svg';
 import { GuestExitModal } from '@components/guest-exit-modal';
 import type { MenuProps } from 'antd';
-import { Badge, Button, Dropdown, Flex, Space } from 'antd';
+import { Avatar, Badge, Dropdown, Flex, Space } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -41,14 +43,29 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
     });
   };
 
+  const guestMenu: MenuProps['items'] = [
+    {
+      key: 'login',
+      label: 'Войти',
+      onClick: () => setGuestExitOpen(true),
+    },
+  ];
+
   const logoutMenu: MenuProps['items'] = [
     { key: 'name', label: user?.fullName, disabled: true },
+    { type: 'divider' },
+    {
+      key: 'profile',
+      label: 'Профиль',
+      onClick: () => void navigate('/profile'),
+    },
     { type: 'divider' },
     {
       key: 'logout',
       label: 'Выйти',
       danger: true,
       onClick: () => {
+        dispatch(clearAllRules());
         void dispatch(logoutUser()).then(() => {
           dispatch(api.util.resetApiState());
         });
@@ -60,7 +77,7 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
     <>
       <Flex align="center" justify="space-between" className={styles.appBar}>
         <Space size={16} align="center">
-          <div className={styles.logo} />
+          <img src={logo} width={40} height={40} alt="ReqForge" />
           <Space size={24} align="center" className={styles.nav}>
             <span
               className={`${styles.navItem} ${active === 'rules' ? styles.navItemActive : ''}`}
@@ -95,15 +112,24 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
         <Space size={8} align="center">
           {rightExtra}
           {mode === 'guest' && (
-            <Button size="small" onClick={() => setGuestExitOpen(true)}>
-              Войти
-            </Button>
+            <Dropdown menu={{ items: guestMenu }} trigger={['click']}>
+              <Avatar
+                shape="square"
+                size="large"
+                icon={<UserOutlined />}
+                style={{ cursor: 'pointer' }}
+              />
+            </Dropdown>
           )}
           {mode === 'authenticated' && (
             <Dropdown menu={{ items: logoutMenu }} trigger={['click']}>
-              <div className={`${styles.avatar} ${styles.avatarClickable}`}>
+              <Avatar
+                shape="square"
+                size="large"
+                style={{ backgroundColor: '#ffd6e7', color: '#eb2f96', cursor: 'pointer' }}
+              >
                 {getInitials(user?.fullName)}
-              </div>
+              </Avatar>
             </Dropdown>
           )}
         </Space>

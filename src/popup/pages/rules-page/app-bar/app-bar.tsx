@@ -67,11 +67,11 @@ export const AppBar = () => {
           if (file) handleImportFile(file);
         }}
       />
-      <Button type="primary" size="small" onClick={() => fileInputRef.current?.click()}>
-        Импорт
-      </Button>
       <Button size="small" onClick={handleOpenExport}>
         Экспорт
+      </Button>
+      <Button type="primary" size="small" onClick={() => fileInputRef.current?.click()}>
+        Импорт
       </Button>
     </>
   );
