@@ -98,11 +98,26 @@ export const api = createApi({
     login: build.mutation<{ access_token: string }, { email: string; password: string }>({
       query: (body) => ({ url: '/auth/login', method: 'POST', body }),
     }),
-    register: build.mutation<SafeUser, { fullName: string; email: string; password: string }>({
+    register: build.mutation<
+      SafeUser,
+      { fullName: string; email: string; password: string; code: string }
+    >({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
+    }),
+    sendCode: build.mutation<void, { email: string; type: 'REGISTER' | 'RESET' }>({
+      query: (body) => ({ url: '/auth/send-code', method: 'POST', body }),
+    }),
+    resetPassword: build.mutation<void, { email: string; code: string; newPassword: string }>({
+      query: (body) => ({ url: '/auth/reset-password', method: 'POST', body }),
     }),
     getMe: build.query<SafeUser, void>({
       query: () => '/users/me',
+    }),
+    updateMe: build.mutation<SafeUser, { fullName?: string; email?: string }>({
+      query: (body) => ({ url: '/users/me', method: 'PATCH', body }),
+    }),
+    changePassword: build.mutation<void, { oldPassword: string; newPassword: string }>({
+      query: (body) => ({ url: '/users/me/password', method: 'PATCH', body }),
     }),
     getGroups: build.query<ServerGroup[], void>({
       query: () => '/groups',
@@ -140,7 +155,11 @@ export const api = createApi({
 export const {
   useLoginMutation,
   useRegisterMutation,
+  useSendCodeMutation,
+  useResetPasswordMutation,
   useLazyGetMeQuery,
+  useUpdateMeMutation,
+  useChangePasswordMutation,
   useCreateStoppingRuleMutation,
   useCreateBackgroundRuleMutation,
   useUpdateStoppingRuleMutation,

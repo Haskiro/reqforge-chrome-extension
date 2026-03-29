@@ -199,7 +199,7 @@ export const RuleForm = () => {
         onFinish={(v: RuleFormValues) => void handleSave(v)}
         className={styles.form}
       >
-        {apiError && <Alert type="error" title={apiError} style={{ marginBottom: 12 }} />}
+        {apiError && <Alert type="error" title={apiError} style={{ marginBottom: 12 }} showIcon />}
         <Form.Item
           label="Группа"
           name="groupName"
@@ -288,11 +288,11 @@ export const RuleForm = () => {
         )}
 
         <Flex gap={8} justify="flex-end" className={styles.formFooter}>
-          <Button type="primary" htmlType="submit" loading={isSaving}>
-            Сохранить
-          </Button>
           <Button onClick={resetForm} disabled={isSaving}>
             Очистить
+          </Button>
+          <Button type="primary" htmlType="submit" loading={isSaving}>
+            Сохранить
           </Button>
         </Flex>
       </Form>

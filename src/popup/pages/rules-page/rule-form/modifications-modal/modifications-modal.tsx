@@ -70,9 +70,10 @@ export const ModificationsModal = ({
       cancelText="Отмена"
       width={800}
       destroyOnHidden
+      centered={true}
     >
       {conflictError && (
-        <Alert type="error" description={conflictError} style={{ marginBottom: 12 }} />
+        <Alert type="error" description={conflictError} style={{ marginBottom: 12 }} showIcon />
       )}
       <ModificationsList
         value={local}

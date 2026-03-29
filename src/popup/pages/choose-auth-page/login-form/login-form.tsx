@@ -11,6 +11,7 @@ import styles from './login-form.module.css';
 
 export type LoginFormProps = {
   onBack: () => void;
+  onForgotPassword: () => void;
 };
 
 type FormValues = {
@@ -18,7 +19,7 @@ type FormValues = {
   password: string;
 };
 
-export const LoginForm = ({ onBack }: LoginFormProps) => {
+export const LoginForm = ({ onBack, onForgotPassword }: LoginFormProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [login, { isLoading, error }] = useLoginMutation();
@@ -65,7 +66,9 @@ export const LoginForm = ({ onBack }: LoginFormProps) => {
         onFinish={(v: FormValues) => void handleSubmit(v)}
         requiredMark={false}
       >
-        {displayError && <Alert type="error" title={displayError} className={styles.alert} />}
+        {displayError && (
+          <Alert type="error" title={displayError} className={styles.alert} showIcon />
+        )}
         <Form.Item
           name="email"
           label="Email"
@@ -80,13 +83,18 @@ export const LoginForm = ({ onBack }: LoginFormProps) => {
         >
           <Input.Password placeholder="••••••••" size="large" />
         </Form.Item>
-        <Flex justify="space-between" align="center" className={styles.actions}>
-          <Button type="link" onClick={onBack} disabled={isSubmitting}>
-            ← Назад
-          </Button>
-          <Button type="primary" htmlType="submit" size="large" loading={isLoading || isSubmitting}>
+        <Flex vertical gap={8} className={styles.actions}>
+          <Button type="primary" htmlType="submit" loading={isLoading || isSubmitting} block>
             Войти
           </Button>
+          <Flex justify="space-between" align="center">
+            <Button type="link" onClick={onBack} disabled={isSubmitting}>
+              ← Назад
+            </Button>
+            <Button type="link" onClick={onForgotPassword} disabled={isSubmitting}>
+              Забыли пароль?
+            </Button>
+          </Flex>
         </Flex>
       </Form>
     </Flex>

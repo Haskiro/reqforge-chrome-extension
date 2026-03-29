@@ -29,6 +29,7 @@ export const AddGroupModal = ({ open, onClose, onAdd }: AddGroupModalProps) => {
       onCancel={handleCancel}
       okText="Создать"
       cancelText="Отмена"
+      centered={true}
     >
       <Input
         value={name}

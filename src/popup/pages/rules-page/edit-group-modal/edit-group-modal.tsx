@@ -37,6 +37,7 @@ export const EditGroupModal = ({ open, group, onConfirm, onCancel }: EditGroupMo
       onCancel={handleCancel}
       okText="Сохранить"
       cancelText="Отмена"
+      centered={true}
     >
       <Form form={form} layout="vertical">
         <Form.Item
