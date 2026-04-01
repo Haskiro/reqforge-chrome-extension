@@ -71,6 +71,7 @@ export const ModificationsModal = ({
       width={800}
       destroyOnHidden
       centered={true}
+      data-testid="modifications-modal"
     >
       {conflictError && (
         <Alert type="error" description={conflictError} style={{ marginBottom: 12 }} showIcon />

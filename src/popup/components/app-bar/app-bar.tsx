@@ -82,12 +82,14 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
             <span
               className={`${styles.navItem} ${active === 'rules' ? styles.navItemActive : ''}`}
               onClick={() => navigate('/rules')}
+              data-testid="nav-rules"
             >
               Правила
             </span>
             <span
               className={`${styles.navItem} ${active === 'traffic' ? styles.navItemActive : ''}`}
               onClick={() => navigate('/traffic')}
+              data-testid="nav-traffic"
             >
               <Badge count={trafficCount} size="small" offset={[6, -2]}>
                 Трафик
@@ -96,6 +98,7 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
             <span
               className={`${styles.navItem} ${active === 'repeat' ? styles.navItemActive : ''}`}
               onClick={() => navigate('/repeat')}
+              data-testid="nav-repeat"
             >
               <Badge count={repeatCount} size="small" offset={[6, -2]}>
                 Повтор
@@ -104,6 +107,7 @@ export const AppBar = ({ active, rightExtra }: AppBarProps) => {
             <span
               className={`${styles.navItem} ${active === 'help' ? styles.navItemActive : ''}`}
               onClick={() => navigate('/help')}
+              data-testid="nav-help"
             >
               Помощь
             </span>

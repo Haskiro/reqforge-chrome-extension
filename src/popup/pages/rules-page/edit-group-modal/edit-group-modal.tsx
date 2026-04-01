@@ -38,6 +38,7 @@ export const EditGroupModal = ({ open, group, onConfirm, onCancel }: EditGroupMo
       okText="Сохранить"
       cancelText="Отмена"
       centered={true}
+      data-testid="edit-group-modal"
     >
       <Form form={form} layout="vertical">
         <Form.Item
@@ -45,7 +46,11 @@ export const EditGroupModal = ({ open, group, onConfirm, onCancel }: EditGroupMo
           name="name"
           rules={[{ required: true, message: 'Введите название группы' }]}
         >
-          <Input placeholder="Название группы" onPressEnter={handleOk} />
+          <Input
+            placeholder="Название группы"
+            onPressEnter={handleOk}
+            data-testid="edit-group-input"
+          />
         </Form.Item>
       </Form>
     </Modal>

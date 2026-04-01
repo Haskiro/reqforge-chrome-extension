@@ -178,7 +178,7 @@ export const RuleForm = () => {
   return (
     <div className={styles.rightPanel}>
       <Flex align="center" justify="space-between" className={styles.formHeader}>
-        <Typography.Title level={5} style={{ margin: 0 }}>
+        <Typography.Title level={5} style={{ margin: 0 }} data-testid="rule-form-title">
           {selectedRule ? 'Редактирование' : 'Создание'}
         </Typography.Title>
         <Button
@@ -190,6 +190,7 @@ export const RuleForm = () => {
             dispatch(setSelectedRuleId(null));
             resetForm();
           }}
+          data-testid="rule-form-new"
         />
       </Flex>
 
@@ -205,7 +206,11 @@ export const RuleForm = () => {
           name="groupName"
           tooltip="Если группа не существует — она будет создана автоматически. Если оставить пустым — правило попадёт в группу по умолчанию"
         >
-          <AutoComplete options={groupOptions} placeholder="Выберите или введите группу" />
+          <AutoComplete
+            options={groupOptions}
+            placeholder="Выберите или введите группу"
+            data-testid="rule-form-group"
+          />
         </Form.Item>
 
         <Form.Item
@@ -213,7 +218,7 @@ export const RuleForm = () => {
           name="name"
           rules={[{ required: true, message: 'Введите название' }]}
         >
-          <Input placeholder="Название правила" />
+          <Input placeholder="Название правила" data-testid="rule-form-name" />
         </Form.Item>
 
         <Form.Item
@@ -221,7 +226,12 @@ export const RuleForm = () => {
           name="method"
           rules={[{ required: true, message: 'Выберите метод' }]}
         >
-          <Select mode="multiple" placeholder="Выберите методы" options={HTTP_METHODS} />
+          <Select
+            mode="multiple"
+            placeholder="Выберите методы"
+            options={HTTP_METHODS}
+            data-testid="rule-form-method"
+          />
         </Form.Item>
 
         <Form.Item
@@ -232,6 +242,7 @@ export const RuleForm = () => {
           <Select
             placeholder="Тип сравнения"
             options={RULE_TYPES.map((rt) => ({ value: rt.id, label: rt.name }))}
+            data-testid="rule-form-type"
           />
         </Form.Item>
 
@@ -240,7 +251,7 @@ export const RuleForm = () => {
           name="value"
           rules={[{ required: true, message: 'Введите значение' }]}
         >
-          <Input placeholder="www.example.com/api" />
+          <Input placeholder="www.example.com/api" data-testid="rule-form-value" />
         </Form.Item>
 
         <Form.Item
@@ -255,6 +266,7 @@ export const RuleForm = () => {
                 ? INTERACTIVE_DIRECTION_OPTIONS
                 : BACKGROUND_DIRECTION_OPTIONS
             }
+            data-testid="rule-form-direction"
           />
         </Form.Item>
 
@@ -266,7 +278,11 @@ export const RuleForm = () => {
               </Typography.Text>
             )}
             <Form.Item label="Модификации">
-              <Button onClick={() => setModsModalOpen(true)} danger={modsError}>
+              <Button
+                onClick={() => setModsModalOpen(true)}
+                danger={modsError}
+                data-testid="rule-form-modifications-btn"
+              >
                 {modifications.length === 0
                   ? 'Настроить модификации'
                   : `Модификации (${modifications.length})`}
@@ -288,10 +304,10 @@ export const RuleForm = () => {
         )}
 
         <Flex gap={8} justify="flex-end" className={styles.formFooter}>
-          <Button onClick={resetForm} disabled={isSaving}>
+          <Button onClick={resetForm} disabled={isSaving} data-testid="rule-form-clear">
             Очистить
           </Button>
-          <Button type="primary" htmlType="submit" loading={isSaving}>
+          <Button type="primary" htmlType="submit" loading={isSaving} data-testid="rule-form-save">
             Сохранить
           </Button>
         </Flex>

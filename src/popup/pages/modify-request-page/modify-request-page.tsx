@@ -135,13 +135,19 @@ export const ModifyRequestPage = () => {
         </Typography.Title>
         {isResponse ? (
           <Flex gap={8} align="center">
-            <Input value={url} disabled className={styles.urlInput} />
+            <Input
+              value={url}
+              disabled
+              className={styles.urlInput}
+              data-testid="modify-url-input"
+            />
             <InputNumber
               className={styles.statusInput}
               value={responseStatus}
               onChange={(v) => setResponseStatus(v ?? 200)}
               min={100}
               max={599}
+              data-testid="modify-status-input"
             />
           </Flex>
         ) : (
@@ -151,8 +157,13 @@ export const ModifyRequestPage = () => {
               options={methodOptions}
               onChange={setMethod}
               popupMatchSelectWidth={false}
+              data-testid="modify-method-select"
             />
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} />
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              data-testid="modify-url-input"
+            />
           </Space.Compact>
         )}
       </Flex>
@@ -205,7 +216,12 @@ export const ModifyRequestPage = () => {
   return (
     <Layout className={styles.page}>
       <Flex align="center" gap={8} className={styles.header}>
-        <Button icon={<ArrowLeftOutlined />} type="text" onClick={handleCancel} />
+        <Button
+          icon={<ArrowLeftOutlined />}
+          type="text"
+          onClick={handleCancel}
+          data-testid="modify-back-btn"
+        />
         <Flex vertical gap={1} className={styles.headerText}>
           <span className={styles.headerTitle}>
             {isResponse ? 'Модификация ответа' : 'Модификация запроса'}
@@ -220,15 +236,25 @@ export const ModifyRequestPage = () => {
           activeKey={activeTab}
           onChange={handleTabChange}
           items={[
-            { key: 'form', label: 'Форма', children: fieldsTab },
-            { key: 'text', label: 'Текст', children: rawTab },
+            {
+              key: 'form',
+              label: <span data-testid="modify-tab-form">Форма</span>,
+              children: fieldsTab,
+            },
+            {
+              key: 'text',
+              label: <span data-testid="modify-tab-text">Текст</span>,
+              children: rawTab,
+            },
           ]}
         />
       </Layout.Content>
       <Layout.Footer className={styles.footer}>
         <Flex justify="flex-end" gap={8}>
-          <Button onClick={handleCancel}>Отменить</Button>
-          <Button type="primary" onClick={handleSubmit}>
+          <Button onClick={handleCancel} data-testid="modify-cancel-btn">
+            Отменить
+          </Button>
+          <Button type="primary" onClick={handleSubmit} data-testid="modify-submit-btn">
             Отправить
           </Button>
         </Flex>
