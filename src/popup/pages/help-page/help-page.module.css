@@ -1,9 +1,9 @@
 .page {
   height: 100%;
+  width: 100%;
 }
 
 .content {
   overflow: auto;
   padding: 0 20px 20px;
-  max-width: 640px;
 }
