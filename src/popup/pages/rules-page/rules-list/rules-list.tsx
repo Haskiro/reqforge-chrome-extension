@@ -110,7 +110,9 @@ export const RulesList = () => {
               }
             />
           </div>
-          <span className={styles.groupName}>{group.name}</span>
+          <span className={styles.groupName} data-testid={`group-name-${group.id}`}>
+            {group.name}
+          </span>
         </Flex>
       ),
       extra:
@@ -123,6 +125,7 @@ export const RulesList = () => {
               variant="outlined"
               icon={<EditOutlined />}
               onClick={() => setEditingGroup(group)}
+              data-testid={`group-edit-btn-${group.id}`}
             />
             <Button
               danger
@@ -130,6 +133,7 @@ export const RulesList = () => {
               size="small"
               icon={<DeleteOutlined />}
               onClick={() => setDeletingGroup(group)}
+              data-testid={`group-delete-btn-${group.id}`}
             />
           </Space>
         ) : null,
@@ -137,7 +141,7 @@ export const RulesList = () => {
         groupRules.length === 0 ? (
           <div className={styles.emptyGroup}>Нет правил в этой группе</div>
         ) : (
-          <Flex vertical gap={2}>
+          <Flex vertical gap={2} data-testid={`group-rules-${group.id}`}>
             {groupRules.map((rule) => (
               <RuleRow
                 key={rule.id}
@@ -160,6 +164,7 @@ export const RulesList = () => {
         onChange={(key) => dispatch(setActiveMode(key as RuleMode))}
         items={MODE_TABS}
         className={styles.modeTabs}
+        data-testid="rules-mode-tabs"
       />
       <div className={styles.collapseWrapper}>
         <Collapse
@@ -167,6 +172,7 @@ export const RulesList = () => {
           items={collapseItems}
           defaultActiveKey={groups.map((g) => g.id)}
           bordered
+          data-testid="rules-groups-collapse"
         />
       </div>
 

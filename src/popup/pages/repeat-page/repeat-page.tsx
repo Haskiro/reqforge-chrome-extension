@@ -119,7 +119,7 @@ export const RepeatPage = () => {
       <AppBar active="repeat" />
 
       {entries.length === 0 ? (
-        <Layout.Content className={styles.empty}>
+        <Layout.Content className={styles.empty} data-testid="repeat-empty">
           <Typography.Text type="secondary">
             Выберите запросы во вкладке «Трафик» и нажмите «Повторить»
           </Typography.Text>
@@ -135,6 +135,7 @@ export const RepeatPage = () => {
             size="middle"
             items={tabItems}
             className={styles.tabsNav}
+            data-testid="repeat-tabs"
           />
 
           {activeEntry && activeEs && (
@@ -153,7 +154,12 @@ export const RepeatPage = () => {
 
           <Layout.Footer className={styles.footer}>
             <Flex justify="flex-end">
-              <Button type="primary" loading={activeEs?.isSending ?? false} onClick={handleSend}>
+              <Button
+                type="primary"
+                loading={activeEs?.isSending ?? false}
+                onClick={handleSend}
+                data-testid="repeat-send-btn"
+              >
                 Отправить
               </Button>
             </Flex>

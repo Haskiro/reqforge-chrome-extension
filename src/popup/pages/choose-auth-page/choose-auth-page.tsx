@@ -43,6 +43,7 @@ export const ChooseAuthPage = () => {
             icon={<ArrowRightOutlined />}
             iconPlacement="end"
             onClick={() => void handleSkip()}
+            data-testid="skip-auth-button"
           >
             Пропустить
           </Button>

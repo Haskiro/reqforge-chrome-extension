@@ -3,6 +3,7 @@ import { AppBar } from '@components/app-bar';
 import { Button, Dropdown, Flex, Input, Layout, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { SortOrder } from 'antd/es/table/interface';
+import React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -193,7 +194,12 @@ export const TrafficPage = () => {
       fixed: 'end',
       render: (_: unknown, record: StoredEntry) => (
         <Dropdown menu={rowActions(record)} trigger={['click']}>
-          <Button icon={<EllipsisOutlined />} type="text" size="small" />
+          <Button
+            icon={<EllipsisOutlined />}
+            type="text"
+            size="small"
+            data-testid="traffic-row-menu-btn"
+          />
         </Dropdown>
       ),
     },
@@ -213,6 +219,7 @@ export const TrafficPage = () => {
           allowClear={true}
           enterButton={true}
           size="large"
+          data-testid="traffic-search"
         />
         <Space className={styles.toolbarActions}>
           <Button
@@ -221,6 +228,7 @@ export const TrafficPage = () => {
             size="small"
             disabled={selectedRowKeys.length === 0}
             onClick={handleProceedSelected}
+            data-testid="traffic-proceed-btn"
           >
             Пропустить
           </Button>
@@ -230,6 +238,7 @@ export const TrafficPage = () => {
             size="small"
             disabled={selectedRowKeys.length === 0}
             onClick={handleRejectSelected}
+            data-testid="traffic-reject-btn"
           >
             Отклонить
           </Button>
@@ -252,10 +261,14 @@ export const TrafficPage = () => {
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys as string[]),
           }}
+          onRow={(record) =>
+            ({ 'data-testid': `traffic-row-${record.id}` }) as React.HTMLAttributes<HTMLElement>
+          }
           scroll={{ x: true }}
           pagination={false}
           bordered={true}
           locale={{ emptyText: 'Нет перехваченных запросов' }}
+          data-testid="traffic-table"
         />
       </Layout.Content>
     </Layout>

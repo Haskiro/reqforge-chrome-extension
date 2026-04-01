@@ -33,6 +33,12 @@ const chromeMock = {
       disconnect: () => {},
     }),
   },
+  debugger: {
+    attach: () => {},
+    detach: () => {},
+    sendCommand: () => {},
+    onEvent: { addListener: () => {}, removeListener: () => {} },
+  },
 };
 
 if (typeof chrome === 'undefined' || !chrome.storage) {

@@ -42,6 +42,7 @@ export const DeleteGroupModal = ({
       cancelText="Отмена"
       okButtonProps={{ danger: true }}
       centered={true}
+      data-testid="delete-group-modal"
     >
       <Typography.Paragraph>
         Вы уверены, что хотите удалить группу <strong>{group?.name}</strong>?
@@ -58,6 +59,7 @@ export const DeleteGroupModal = ({
               value={moveToGroupId}
               onChange={setMoveToGroupId}
               options={otherGroups.map((g) => ({ value: g.id, label: g.name }))}
+              data-testid="delete-group-move-select"
             />
           </Form.Item>
         </Form>
