@@ -18,6 +18,14 @@ export const HelpPage = () => {
           вкладки до переоткрытия расширения.
         </Typography.Paragraph>
 
+        <Typography.Title level={5}>Переключение вкладок при перехвате</Typography.Title>
+        <Typography.Paragraph style={{ marginBottom: 20 }}>
+          Пока есть необработанные перехваченные запросы, расширение удерживает отладчик на исходной
+          вкладке — вы можете спокойно переключаться на другие вкладки, чтобы скопировать нужные
+          данные. Запросы не будут пропущены автоматически. Отладчик переключится на новую вкладку
+          только после того, как все ожидающие запросы будут обработаны.
+        </Typography.Paragraph>
+
         <Typography.Title level={5}>Запросы не перехватываются</Typography.Title>
         <Typography.Paragraph>Возможные причины:</Typography.Paragraph>
         <Typography.Paragraph>

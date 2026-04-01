@@ -85,7 +85,7 @@ export type UpdateBackgroundRuleBody = Partial<CreateBackgroundRuleBody> & {
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000',
+    baseUrl: import.meta.env.VITE_API_URL as string,
     prepareHeaders: async (headers) => {
       const { authToken } = await chrome.storage.local.get('authToken');
       if (typeof authToken === 'string' && authToken) {

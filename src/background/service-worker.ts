@@ -189,9 +189,18 @@ chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
       // Only switch debugger if popup is open and there is something to intercept
       if (!shouldIntercept() || popupWindowId == null) return;
 
-      // Detach from the previous target tab
+      // Don't detach from the previous tab if it still has pending requests —
+      // detaching would cause Chrome to auto-resume them before the user handles them.
       if (prevTarget != null && prevTarget !== tabId && attachedTabs.has(prevTarget)) {
-        await tryDetachTab(prevTarget);
+        const result = await chrome.storage.local.get('entries');
+        const entries: StoredEntry[] = (result.entries as StoredEntry[]) ?? [];
+        const hasPending = entries.some(
+          (e) =>
+            e.tabId === prevTarget && (e.status === 'pending' || e.status === 'response_pending'),
+        );
+        if (!hasPending) {
+          await tryDetachTab(prevTarget);
+        }
       }
       // Attach to the new target tab
       if (!attachedTabs.has(tabId)) {
