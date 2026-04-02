@@ -13,8 +13,7 @@ const hasEnabledBackgroundRules = (): boolean =>
 const hasEnabledInteractiveRules = (): boolean =>
   cachedRules.some((r) => r.enabled && r.mode === 'interactive');
 
-const shouldIntercept = (): boolean =>
-  !!filterUrl || hasEnabledBackgroundRules() || hasEnabledInteractiveRules();
+const shouldIntercept = (): boolean => hasEnabledBackgroundRules() || hasEnabledInteractiveRules();
 
 chrome.action.onClicked.addListener(() => {
   void (async () => {
@@ -67,7 +66,6 @@ async function onPopupClosed(): Promise<void> {
     });
   }
   cachedRules = [];
-  console.log('[RF:sw] popup closed — detached all, cleared history, disabled all rules');
 }
 
 // ── CDP state ─────────────────────────────────────────────────────────────────
@@ -81,7 +79,6 @@ const entryToCdp = new Map<string, { tabId: number; cdpRequestId: string }>();
 // Network.RequestId → entryId (for detecting cancelled requests)
 const networkToEntry = new Map<string, string>();
 
-let filterUrl = '';
 // The single tab we're currently intercepting
 let targetTabId: number | undefined;
 
@@ -90,8 +87,7 @@ let cachedRules: Rule[] = [];
 // ── Startup: restore state from storage ──────────────────────────────────────
 
 void (async () => {
-  const local = await chrome.storage.local.get(['filterUrl', 'rulesState']);
-  filterUrl = (local.filterUrl as string) || '';
+  const local = await chrome.storage.local.get(['rulesState']);
   cachedRules = (local.rulesState as { rules: Rule[] } | null)?.rules ?? [];
 
   const session = await chrome.storage.session.get([
@@ -141,10 +137,6 @@ void (async () => {
     targetTabId = active?.id;
     if (targetTabId != null) await chrome.storage.session.set({ targetTabId });
   }
-
-  console.log(
-    `[RF:sw] restored: filter="${filterUrl}" target=${targetTabId} attached=${[...attachedTabs].toString()} cdpKeys=${cdpKeyToEntry.size}`,
-  );
 })();
 
 async function saveCdpMaps(): Promise<void> {
@@ -158,10 +150,8 @@ async function saveCdpMaps(): Promise<void> {
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('[RF:sw] fresh install, initialising storage');
-    void chrome.storage.local.set({ filterUrl: '', entries: [] });
+    void chrome.storage.local.set({ entries: [] });
   } else {
-    console.log('[RF:sw] extension updated/reloaded, clearing in-flight entries');
     chrome.storage.local.get('entries', (r) => {
       const existing: StoredEntry[] = (r.entries as StoredEntry[]) ?? [];
       const cleaned = existing.filter(
@@ -234,38 +224,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
       })();
     }
   }
-  if (!changes.filterUrl) return;
-  filterUrl = (changes.filterUrl.newValue as string) || '';
-
-  // Only act on filter changes while popup is open
-  if (popupWindowId == null) return;
-
-  void (async () => {
-    if (shouldIntercept()) {
-      // Attach to target if not yet attached, otherwise just update patterns
-      if (targetTabId != null) {
-        if (!attachedTabs.has(targetTabId)) {
-          await tryAttachTab(targetTabId);
-        } else {
-          try {
-            await enableFetch(targetTabId);
-          } catch (e) {
-            console.warn(`[RF:sw] enableFetch update failed for tab ${targetTabId}:`, e);
-          }
-        }
-      }
-    } else {
-      // Nothing to intercept — disable Fetch but KEEP debugger attached
-      // (re-attaching on next change would show the banner again)
-      for (const tabId of [...attachedTabs]) {
-        try {
-          await chrome.debugger.sendCommand({ tabId }, 'Fetch.disable', {});
-        } catch (e) {
-          console.warn(`[RF:sw] Fetch.disable failed for tab ${tabId}:`, e);
-        }
-      }
-    }
-  })();
 });
 
 // ── Tab management ────────────────────────────────────────────────────────────
@@ -299,7 +257,7 @@ chrome.debugger.onDetach.addListener((source, reason) => {
   // Re-attach if the tab still exists (i.e. it's navigation, not a tab close).
   void (async () => {
     await cleanupTabMaps(tabId);
-    if (tabId !== targetTabId || !filterUrl || popupWindowId == null) return;
+    if (tabId !== targetTabId || popupWindowId == null) return;
     try {
       await chrome.tabs.get(tabId); // throws if tab is truly gone
       await tryAttachTab(tabId);
@@ -317,7 +275,6 @@ async function tryAttachTab(tabId: number): Promise<void> {
     await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {});
     await enableFetch(tabId);
     attachedTabs.add(tabId);
-    console.log(`[RF:sw] attached debugger to tab ${tabId}`);
   } catch (e) {
     console.warn(`[RF:sw] cannot attach to tab ${tabId}:`, e);
   }
@@ -334,25 +291,18 @@ async function tryDetachTab(tabId: number): Promise<void> {
 }
 
 function ruleToGlobPattern(rule: Rule): string {
-  switch (rule.ruleTypeId) {
-    case 1:
+  switch (rule.ruleType) {
+    case 'CONTAINS':
       return `*${escapeGlob(rule.value)}*`;
-    case 2:
+    case 'EQUALS':
       return escapeGlob(rule.value);
-    default:
-      return '*';
+    case 'REGEX':
+      return rule.value;
   }
 }
 
 async function enableFetch(tabId: number): Promise<void> {
   const patterns: Array<{ urlPattern: string; requestStage: string }> = [];
-
-  if (filterUrl) {
-    patterns.push(
-      { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Request' },
-      { urlPattern: `*${escapeGlob(filterUrl)}*`, requestStage: 'Response' },
-    );
-  }
 
   for (const rule of cachedRules) {
     if (!rule.enabled) continue;
@@ -515,7 +465,6 @@ async function handleRequestPaused(
   };
 
   await upsertEntry(entry);
-  console.log(`[RF:sw] request paused tab=${tabId} cdpId=${cdpRequestId} entryId=${id}`);
 }
 
 async function handleResponsePaused(
@@ -621,9 +570,6 @@ async function handleResponsePaused(
       tabId,
     };
     await upsertEntry(entry);
-    console.log(
-      `[RF:sw] response-only entry created tab=${tabId} entryId=${id} status=${statusCode} url=${url}`,
-    );
     return;
   }
 
@@ -669,9 +615,6 @@ async function handleResponsePaused(
   entryToCdp.delete(entryId);
   entryToCdp.set(responseId, { tabId, cdpRequestId });
   await saveCdpMaps();
-  console.log(
-    `[RF:sw] response paused tab=${tabId} responseEntryId=${responseId} status=${statusCode} url=${url}`,
-  );
 }
 
 // ── Message handler ───────────────────────────────────────────────────────────
@@ -737,7 +680,6 @@ async function handleProceed(msg: Extract<PopupToWorker, { type: 'PROCEED' }>): 
 
   try {
     await chrome.debugger.sendCommand({ tabId }, 'Fetch.continueRequest', continueParams);
-    console.log(`[RF:sw] continued request tab=${tabId} entryId=${entry.id}`);
   } catch (e) {
     console.error('[RF:sw] continueRequest failed:', e);
   }
@@ -794,7 +736,6 @@ async function handleApplyResponse(
         requestId: cdpRequestId,
       });
     }
-    console.log(`[RF:sw] fulfilled response tab=${tabId} entryId=${entryId}`);
   } catch (e) {
     console.error('[RF:sw] fulfillRequest failed:', e);
   }
@@ -818,7 +759,6 @@ async function handleReject(msg: Extract<PopupToWorker, { type: 'REJECT' }>): Pr
       requestId: cdpRequestId,
       errorReason: 'Failed',
     });
-    console.log(`[RF:sw] rejected request tab=${tabId} entryId=${entryId}`);
   } catch (e) {
     console.error('[RF:sw] failRequest failed:', e);
   }
@@ -851,7 +791,6 @@ async function handleRejectMany(
   );
   await deleteEntries(entryIds);
   await saveCdpMaps();
-  console.log(`[RF:sw] rejected ${entryIds.length} entries`);
 }
 
 async function handleApplyResponseMany(
@@ -878,7 +817,6 @@ async function handleApplyResponseMany(
   );
   await deleteEntries(entryIds);
   await saveCdpMaps();
-  console.log(`[RF:sw] applied responses for ${entryIds.length} entries`);
 }
 
 async function handleProceedMany(
@@ -901,7 +839,6 @@ async function handleProceedMany(
     }),
   );
   await deleteEntries(entries.map((e) => e.id));
-  console.log(`[RF:sw] proceeded ${entries.length} entries`);
 }
 
 const FORBIDDEN_HEADERS = new Set([
@@ -1066,7 +1003,6 @@ async function cleanupTabEntries(tabId: number): Promise<void> {
   );
   if (cleaned.length !== entries.length) {
     await chrome.storage.local.set({ entries: cleaned });
-    console.log(`[RF:sw] cleared in-flight entries for tab ${tabId} (navigation)`);
   }
   await cleanupTabMaps(tabId);
 }

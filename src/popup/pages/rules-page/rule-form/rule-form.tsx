@@ -108,7 +108,7 @@ export const RuleForm = () => {
         name: values.name,
         method: values.method,
         value: values.value,
-        ruleTypeId: values.ruleTypeId,
+        ruleType: values.ruleType,
         ...groupPayload,
       };
       try {
@@ -239,12 +239,12 @@ export const RuleForm = () => {
 
           <Form.Item
             label="Тип сравнения"
-            name="ruleTypeId"
+            name="ruleType"
             rules={[{ required: true, message: 'Выберите тип' }]}
           >
             <Select
               placeholder="Тип сравнения"
-              options={RULE_TYPES.map((rt) => ({ value: rt.id, label: rt.name }))}
+              options={RULE_TYPES.map((rt) => ({ value: rt.value, label: rt.name }))}
               data-testid="rule-form-type"
             />
           </Form.Item>

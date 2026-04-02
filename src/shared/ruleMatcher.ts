@@ -4,15 +4,13 @@ const REQUEST_MOD_TYPES = ['ADD_HEADER', 'REPLACE_BODY', 'REPLACE_URL'] as const
 const RESPONSE_MOD_TYPES = ['ADD_HEADER', 'REPLACE_BODY', 'REPLACE_STATUS'] as const;
 
 const matchesUrl = (rule: Rule, url: string): boolean => {
-  switch (rule.ruleTypeId) {
-    case 1:
+  switch (rule.ruleType) {
+    case 'CONTAINS':
       return url.includes(rule.value);
-    case 2:
+    case 'EQUALS':
       return url === rule.value;
-    case 3:
+    case 'REGEX':
       return new RegExp(rule.value).test(url);
-    default:
-      return false;
   }
 };
 
