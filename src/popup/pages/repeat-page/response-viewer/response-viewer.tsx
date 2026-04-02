@@ -1,4 +1,4 @@
-import { tryPrettify } from '@pages/modify-request-page/helpers';
+import { detectBodyLanguage, prettifyBody } from '@pages/modify-request-page/helpers';
 import CodeMirror from '@uiw/react-codemirror';
 import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -51,15 +51,8 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
     value,
   }));
 
-  const prettifiedBody = tryPrettify(response.body);
-  const isJson = (() => {
-    try {
-      JSON.parse(response.body);
-      return true;
-    } catch {
-      return false;
-    }
-  })();
+  const language = detectBodyLanguage(response.headers, response.body);
+  const prettifiedBody = prettifyBody(response.body, language);
 
   return (
     <Flex vertical gap={16} className={styles.viewer}>
@@ -89,7 +82,7 @@ export const ResponseViewer = ({ response }: ResponseViewerProps) => {
         <div className={styles.editorWrapper}>
           <CodeMirror
             value={prettifiedBody}
-            extensions={getExtensions(isJson ? 'json' : 'html')}
+            extensions={getExtensions(language)}
             editable={false}
             minHeight="120px"
             basicSetup={{ lineNumbers: true, foldGutter: false }}

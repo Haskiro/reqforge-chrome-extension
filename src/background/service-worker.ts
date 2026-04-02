@@ -37,8 +37,7 @@ chrome.action.onClicked.addListener(() => {
     await chrome.storage.session.set({ popupWindowId: win?.id });
     await chrome.storage.local.set({ entries: [] });
 
-    // Start intercepting when popup opens
-    if (shouldIntercept() && targetTabId != null && !attachedTabs.has(targetTabId)) {
+    if (targetTabId != null && !attachedTabs.has(targetTabId)) {
       await tryAttachTab(targetTabId);
     }
   })();
@@ -127,8 +126,7 @@ void (async () => {
       for (const t of targets) {
         if (t.tabId != null && t.attached) attachedTabs.add(t.tabId);
       }
-      // Re-attach to target if needed
-      if (shouldIntercept() && targetTabId != null && !attachedTabs.has(targetTabId)) {
+      if (targetTabId != null && !attachedTabs.has(targetTabId)) {
         await tryAttachTab(targetTabId);
       }
     } catch {
@@ -292,9 +290,8 @@ chrome.debugger.onDetach.addListener((source, reason) => {
   attachedTabs.delete(tabId);
 
   if (reason === 'canceled_by_user') {
-    // User explicitly closed the debugging banner — respect it, do NOT re-attach
     void cleanupTabMaps(tabId);
-    console.log(`[RF:sw] debugging dismissed by user for tab ${tabId}`);
+    void chrome.runtime.sendMessage({ type: 'DEBUGGER_DETACHED' });
     return;
   }
 
@@ -695,6 +692,10 @@ chrome.runtime.onMessage.addListener((msg: PopupToWorker, _sender, sendResponse)
       await handleApplyResponseMany(msg);
     } else if (msg.type === 'REPEAT') {
       await handleRepeat(msg, sendResponse);
+      return;
+    } else if (msg.type === 'REATTACH_DEBUGGER') {
+      if (targetTabId != null) await tryAttachTab(targetTabId);
+      sendResponse({ ok: true });
       return;
     }
     sendResponse({ ok: true });

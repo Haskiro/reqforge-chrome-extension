@@ -194,124 +194,133 @@ export const RuleForm = () => {
         />
       </Flex>
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={(v: RuleFormValues) => void handleSave(v)}
-        className={styles.form}
-      >
-        {apiError && <Alert type="error" title={apiError} style={{ marginBottom: 12 }} showIcon />}
-        <Form.Item
-          label="Группа"
-          name="groupName"
-          tooltip="Если группа не существует — она будет создана автоматически. Если оставить пустым — правило попадёт в группу по умолчанию"
+      <div className={styles.formScrollArea}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={(v: RuleFormValues) => void handleSave(v)}
+          className={styles.form}
         >
-          <AutoComplete
-            options={groupOptions}
-            placeholder="Выберите или введите группу"
-            data-testid="rule-form-group"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Название"
-          name="name"
-          rules={[{ required: true, message: 'Введите название' }]}
-        >
-          <Input placeholder="Название правила" data-testid="rule-form-name" />
-        </Form.Item>
-
-        <Form.Item
-          label="Метод"
-          name="method"
-          rules={[{ required: true, message: 'Выберите метод' }]}
-        >
-          <Select
-            mode="multiple"
-            placeholder="Выберите методы"
-            options={HTTP_METHODS}
-            data-testid="rule-form-method"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Тип сравнения"
-          name="ruleTypeId"
-          rules={[{ required: true, message: 'Выберите тип' }]}
-        >
-          <Select
-            placeholder="Тип сравнения"
-            options={RULE_TYPES.map((rt) => ({ value: rt.id, label: rt.name }))}
-            data-testid="rule-form-type"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Значение"
-          name="value"
-          rules={[{ required: true, message: 'Введите значение' }]}
-        >
-          <Input placeholder="www.example.com/api" data-testid="rule-form-value" />
-        </Form.Item>
-
-        <Form.Item
-          label="Направление"
-          name="direction"
-          rules={[{ required: true, message: 'Выберите направление' }]}
-        >
-          <Select
-            placeholder="Направление"
-            options={
-              activeMode === 'interactive'
-                ? INTERACTIVE_DIRECTION_OPTIONS
-                : BACKGROUND_DIRECTION_OPTIONS
-            }
-            data-testid="rule-form-direction"
-          />
-        </Form.Item>
-
-        {activeMode === 'background' && (
-          <>
-            {modsError && (
-              <Typography.Text type="danger" style={{ display: 'block', marginBottom: 8 }}>
-                Добавьте хотя бы одну модификацию
-              </Typography.Text>
-            )}
-            <Form.Item label="Модификации">
-              <Button
-                onClick={() => setModsModalOpen(true)}
-                danger={modsError}
-                data-testid="rule-form-modifications-btn"
-              >
-                {modifications.length === 0
-                  ? 'Настроить модификации'
-                  : `Модификации (${modifications.length})`}
-              </Button>
-            </Form.Item>
-            <ModificationsModal
-              open={modsModalOpen}
-              value={modifications}
-              direction={direction ?? 'REQUEST'}
-              showErrors={modsError}
-              onSave={(mods) => {
-                setModifications(mods);
-                setModsError(false);
-                setModsModalOpen(false);
-              }}
-              onCancel={() => setModsModalOpen(false)}
+          {apiError && (
+            <Alert type="error" title={apiError} style={{ marginBottom: 12 }} showIcon />
+          )}
+          <Form.Item
+            label="Группа"
+            name="groupName"
+            tooltip="Если группа не существует — она будет создана автоматически. Если оставить пустым — правило попадёт в группу по умолчанию"
+          >
+            <AutoComplete
+              options={groupOptions}
+              placeholder="Выберите или введите группу"
+              data-testid="rule-form-group"
             />
-          </>
-        )}
+          </Form.Item>
 
-        <Flex gap={8} justify="flex-end" className={styles.formFooter}>
-          <Button onClick={resetForm} disabled={isSaving} data-testid="rule-form-clear">
-            Очистить
-          </Button>
-          <Button type="primary" htmlType="submit" loading={isSaving} data-testid="rule-form-save">
-            Сохранить
-          </Button>
-        </Flex>
-      </Form>
+          <Form.Item
+            label="Название"
+            name="name"
+            rules={[{ required: true, message: 'Введите название' }]}
+          >
+            <Input placeholder="Название правила" data-testid="rule-form-name" />
+          </Form.Item>
+
+          <Form.Item
+            label="Метод"
+            name="method"
+            rules={[{ required: true, message: 'Выберите метод' }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Выберите методы"
+              options={HTTP_METHODS}
+              data-testid="rule-form-method"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Тип сравнения"
+            name="ruleTypeId"
+            rules={[{ required: true, message: 'Выберите тип' }]}
+          >
+            <Select
+              placeholder="Тип сравнения"
+              options={RULE_TYPES.map((rt) => ({ value: rt.id, label: rt.name }))}
+              data-testid="rule-form-type"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Значение"
+            name="value"
+            rules={[{ required: true, message: 'Введите значение' }]}
+          >
+            <Input placeholder="www.example.com/api" data-testid="rule-form-value" />
+          </Form.Item>
+
+          <Form.Item
+            label="Направление"
+            name="direction"
+            rules={[{ required: true, message: 'Выберите направление' }]}
+          >
+            <Select
+              placeholder="Направление"
+              options={
+                activeMode === 'interactive'
+                  ? INTERACTIVE_DIRECTION_OPTIONS
+                  : BACKGROUND_DIRECTION_OPTIONS
+              }
+              data-testid="rule-form-direction"
+            />
+          </Form.Item>
+
+          {activeMode === 'background' && (
+            <>
+              {modsError && (
+                <Typography.Text type="danger" style={{ display: 'block', marginBottom: 8 }}>
+                  Добавьте хотя бы одну модификацию
+                </Typography.Text>
+              )}
+              <Form.Item label="Модификации">
+                <Button
+                  onClick={() => setModsModalOpen(true)}
+                  danger={modsError}
+                  data-testid="rule-form-modifications-btn"
+                >
+                  {modifications.length === 0
+                    ? 'Настроить модификации'
+                    : `Модификации (${modifications.length})`}
+                </Button>
+              </Form.Item>
+              <ModificationsModal
+                open={modsModalOpen}
+                value={modifications}
+                direction={direction ?? 'REQUEST'}
+                showErrors={modsError}
+                onSave={(mods) => {
+                  setModifications(mods);
+                  setModsError(false);
+                  setModsModalOpen(false);
+                }}
+                onCancel={() => setModsModalOpen(false)}
+              />
+            </>
+          )}
+        </Form>
+      </div>
+
+      <Flex gap={8} justify="flex-end" className={styles.formFooter}>
+        <Button onClick={resetForm} disabled={isSaving} data-testid="rule-form-clear">
+          Очистить
+        </Button>
+        <Button
+          type="primary"
+          onClick={() => form.submit()}
+          loading={isSaving}
+          data-testid="rule-form-save"
+        >
+          Сохранить
+        </Button>
+      </Flex>
     </div>
   );
 };

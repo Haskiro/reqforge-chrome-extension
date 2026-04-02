@@ -11,13 +11,6 @@ export const HelpPage = () => {
       <Layout.Content className={styles.content}>
         <Typography.Title level={4}>Справка</Typography.Title>
 
-        <Typography.Title level={5}>Баннер отладки Chrome</Typography.Title>
-        <Typography.Paragraph style={{ marginBottom: 20 }}>
-          <strong>Инструмент ReqForge запустил отладку браузера</strong> — это уведомление должно
-          оставаться открытым. Если нажать «Отмена» — перехват запросов прекратится для текущей
-          вкладки до переоткрытия расширения.
-        </Typography.Paragraph>
-
         <Typography.Title level={5}>Переключение вкладок при перехвате</Typography.Title>
         <Typography.Paragraph style={{ marginBottom: 20 }}>
           Пока есть необработанные перехваченные запросы, расширение удерживает отладчик на исходной
@@ -35,10 +28,7 @@ export const HelpPage = () => {
           запросы пойдут через сеть и будут перехвачены.
         </Typography.Paragraph>
         <Typography.Paragraph>
-          <strong>2. Закрыт баннер отладки</strong> — см. раздел выше.
-        </Typography.Paragraph>
-        <Typography.Paragraph>
-          <strong>3. Запросы из iframe / web worker</strong> — перехватываются только запросы
+          <strong>2. Запросы из iframe / web worker</strong> — перехватываются только запросы
           основного фрейма страницы.
         </Typography.Paragraph>
       </Layout.Content>

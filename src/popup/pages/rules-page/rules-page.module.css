@@ -93,9 +93,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 0 16px 16px;
-  overflow-y: auto;
+  padding: 0 16px;
   border-left: 1px solid #f0f0f0;
+}
+
+.formScrollArea {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .formHeader {
@@ -104,7 +108,6 @@
 }
 
 .form {
-  flex: 1;
 }
 
 .form :global(.ant-form-item) {
@@ -112,5 +115,9 @@
 }
 
 .formFooter {
-  padding-top: 8px;
+  flex-shrink: 0;
+  margin: 0 -16px;
+  padding: 8px 16px 16px;
+  background: #fff;
+  box-shadow: 0 -1px 0 #f0f0f0;
 }
