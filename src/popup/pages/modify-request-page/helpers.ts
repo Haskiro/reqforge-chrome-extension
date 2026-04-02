@@ -1,9 +1,42 @@
+import { js_beautify } from 'js-beautify';
+
+import type { BodyLanguage } from '@/types';
+
 export const tryPrettify = (value: string): string => {
   try {
     return JSON.stringify(JSON.parse(value), null, 2);
   } catch {
     return value;
   }
+};
+
+export const tryPrettifyJs = (value: string): string => {
+  try {
+    return js_beautify(value, { indent_size: 2 });
+  } catch {
+    return value;
+  }
+};
+
+export const detectBodyLanguage = (headers: Record<string, string>, body: string): BodyLanguage => {
+  const contentType =
+    Object.entries(headers).find(([k]) => k.toLowerCase() === 'content-type')?.[1] ?? '';
+  if (contentType.includes('application/json')) return 'json';
+  if (contentType.includes('javascript')) return 'javascript';
+  if (contentType.includes('text/html')) return 'html';
+  if (contentType.includes('xml')) return 'xml';
+  try {
+    JSON.parse(body);
+    return 'json';
+  } catch {
+    return 'html';
+  }
+};
+
+export const prettifyBody = (body: string, language: BodyLanguage): string => {
+  if (language === 'json') return tryPrettify(body);
+  if (language === 'javascript') return tryPrettifyJs(body);
+  return body;
 };
 
 export const buildRequestFirstLine = (method: string, url: string) => `${method} ${url}`;

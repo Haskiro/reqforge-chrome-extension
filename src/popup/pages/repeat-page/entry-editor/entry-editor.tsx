@@ -72,14 +72,12 @@ export const EntryEditor = ({ editState, onChange }: EntryEditorProps) => {
         <Typography.Title level={5} className={styles.sectionTitle}>
           Тело
         </Typography.Title>
-        <Flex gap={8} align="center">
-          <Select
-            className={styles.langSelect}
-            value={bodyLanguage}
-            options={BODY_LANGUAGES}
-            onChange={(lang: BodyLanguage) => onChange({ bodyLanguage: lang })}
-          />
-        </Flex>
+        <Select
+          className={styles.langSelect}
+          value={bodyLanguage}
+          options={BODY_LANGUAGES}
+          onChange={(lang: BodyLanguage) => onChange({ bodyLanguage: lang })}
+        />
         <div className={styles.editorWrapper}>
           <CodeMirror
             value={body}

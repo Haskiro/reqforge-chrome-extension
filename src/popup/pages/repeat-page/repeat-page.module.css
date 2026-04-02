@@ -10,6 +10,7 @@
 }
 
 .tabsNav :global(.ant-tabs-nav) {
+  margin-top: 15px;
   margin-bottom: 0;
   padding: 0 14px;
 }
@@ -27,6 +28,7 @@
 .requestPanel {
   overflow-y: auto;
   height: 100%;
+  margin-left: 15px;
 }
 
 .responsePanel {

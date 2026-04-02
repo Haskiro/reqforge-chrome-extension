@@ -44,7 +44,7 @@ export const injectChromeMock = async (page: Page, extraStorage: Record<string, 
             cb?.({ ok: true, status: 200, headers: {}, body: '' });
             return Promise.resolve();
           },
-          onMessage: { addListener: () => {} },
+          onMessage: { addListener: () => {}, removeListener: () => {} },
           connect: () => ({
             postMessage: () => {},
             onDisconnect: { addListener: () => {} },

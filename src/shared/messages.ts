@@ -28,7 +28,11 @@ export type PopupToWorker =
       editedMethod?: string;
       editedHeaders?: Record<string, string>;
       editedBody?: string;
-    };
+    }
+  | { type: 'REATTACH_DEBUGGER' };
+
+// SW → popup
+export type WorkerToPopup = { type: 'DEBUGGER_DETACHED' };
 
 export type RepeatResponse =
   | {

@@ -14,10 +14,11 @@ import {
   buildRawText,
   buildRequestFirstLine,
   buildResponseFirstLine,
+  detectBodyLanguage,
   parseRawText,
   parseRequestFirstLine,
   parseResponseFirstLine,
-  tryPrettify,
+  prettifyBody,
 } from './helpers';
 import styles from './modify-request-page.module.css';
 
@@ -34,10 +35,17 @@ export const ModifyRequestPage = () => {
   const [headers, setHeaders] = useState<Record<string, string>>(
     isResponse ? (entry.responseHeaders ?? {}) : (entry.requestHeaders ?? {}),
   );
-  const [body, setBody] = useState(() =>
-    tryPrettify(isResponse ? (entry.responseBody ?? '') : (entry.requestBody ?? '')),
-  );
-  const [bodyLanguage, setBodyLanguage] = useState<BodyLanguage>('json');
+  const [bodyLanguage, setBodyLanguage] = useState<BodyLanguage>(() => {
+    const headers = isResponse ? (entry.responseHeaders ?? {}) : (entry.requestHeaders ?? {});
+    const body = isResponse ? (entry.responseBody ?? '') : (entry.requestBody ?? '');
+    return detectBodyLanguage(headers, body);
+  });
+  const [body, setBody] = useState(() => {
+    const rawBody = isResponse ? (entry.responseBody ?? '') : (entry.requestBody ?? '');
+    const headers = isResponse ? (entry.responseHeaders ?? {}) : (entry.requestHeaders ?? {});
+    const lang = detectBodyLanguage(headers, rawBody);
+    return prettifyBody(rawBody, lang);
+  });
   const [activeTab, setActiveTab] = useState<'form' | 'text'>('form');
   const [rawText, setRawText] = useState(() => {
     const firstLine = isResponse
