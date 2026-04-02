@@ -29,12 +29,6 @@ export type ServerRuleModification = {
   ruleId: number;
 };
 
-export type ServerRuleType = {
-  id: number;
-  value: string;
-  name: string;
-};
-
 export type ServerRule = {
   id: number;
   name: string;
@@ -45,9 +39,8 @@ export type ServerRule = {
   enabled: boolean;
   userId: number;
   groupId: number | null;
-  ruleTypeId: number;
+  ruleType: 'CONTAINS' | 'EQUALS' | 'REGEX';
   group: ServerGroup | null;
-  ruleType: ServerRuleType;
   modifications: ServerRuleModification[];
 };
 
@@ -55,7 +48,7 @@ export type CreateStoppingRuleBody = {
   name: string;
   method: string[];
   value: string;
-  ruleTypeId: number;
+  ruleType: 'CONTAINS' | 'EQUALS' | 'REGEX';
   direction?: 'REQUEST' | 'RESPONSE' | 'ANY';
   groupId?: number;
   newGroupName?: string;
@@ -65,7 +58,7 @@ export type CreateBackgroundRuleBody = {
   name: string;
   method: string[];
   value: string;
-  ruleTypeId: number;
+  ruleType: 'CONTAINS' | 'EQUALS' | 'REGEX';
   direction: 'REQUEST' | 'RESPONSE';
   modifications: {
     type: ModificationType;

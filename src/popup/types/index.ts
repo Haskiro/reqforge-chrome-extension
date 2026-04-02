@@ -1,10 +1,6 @@
 export type RuleMode = 'interactive' | 'background';
 
-export type RuleType = {
-  id: number;
-  value: 'contains' | 'equals' | 'regex';
-  name: string;
-};
+export type RuleType = 'CONTAINS' | 'EQUALS' | 'REGEX';
 
 export type Group = {
   id: string;
@@ -30,7 +26,7 @@ export type Rule = {
   name: string;
   method: string[];
   value: string;
-  ruleTypeId: number;
+  ruleType: RuleType;
   groupId: string;
   enabled: boolean;
   mode: RuleMode;

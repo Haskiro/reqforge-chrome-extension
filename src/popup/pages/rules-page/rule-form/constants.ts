@@ -1,4 +1,4 @@
-import type { RuleDirection } from '@/types';
+import type { RuleDirection, RuleType } from '@/types';
 
 export const HTTP_METHODS = [
   { value: 'ANY', label: 'Любой' },
@@ -27,7 +27,7 @@ export type RuleFormValues = {
   groupName: string;
   name: string;
   method: string[];
-  ruleTypeId: number;
+  ruleType: RuleType;
   value: string;
   direction: RuleDirection;
 };

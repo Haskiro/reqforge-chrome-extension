@@ -9,7 +9,7 @@ export const serverRuleToLocal = (r: ServerRule): Rule => ({
   name: r.name,
   method: r.method,
   value: r.value,
-  ruleTypeId: r.ruleTypeId,
+  ruleType: r.ruleType,
   groupId:
     r.groupId !== null
       ? String(r.groupId)

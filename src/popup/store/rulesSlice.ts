@@ -27,9 +27,9 @@ export const DEFAULT_GROUP_ID = 'default';
 export const DEFAULT_BACKGROUND_GROUP_ID = 'default-background';
 
 const RULE_TYPES = [
-  { id: 1, value: 'contains' as const, name: 'Содержит' },
-  { id: 2, value: 'equals' as const, name: 'Равно' },
-  { id: 3, value: 'regex' as const, name: 'Regex' },
+  { value: 'CONTAINS' as const, name: 'Содержит' },
+  { value: 'EQUALS' as const, name: 'Равно' },
+  { value: 'REGEX' as const, name: 'Regex' },
 ];
 
 export { RULE_TYPES };
@@ -323,7 +323,7 @@ export const importRulesForServer = createAsyncThunk(
                 name: rule.name,
                 method: rule.method,
                 value: rule.value,
-                ruleTypeId: rule.ruleTypeId,
+                ruleType: rule.ruleType,
                 direction: rule.direction as 'REQUEST' | 'RESPONSE',
                 modifications: toModificationsPayload(rule.modifications),
                 ...groupPayload,
@@ -332,7 +332,7 @@ export const importRulesForServer = createAsyncThunk(
                 name: rule.name,
                 method: rule.method,
                 value: rule.value,
-                ruleTypeId: rule.ruleTypeId,
+                ruleType: rule.ruleType,
                 direction: rule.direction,
                 ...groupPayload,
               };

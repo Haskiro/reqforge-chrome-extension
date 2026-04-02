@@ -31,7 +31,7 @@ export const ExportModal = ({ open, onClose }: ExportModalProps) => {
         version: 1,
         interactiveGroups: interactiveGroups.filter((g) => usedGroupIds.has(g.id)),
         backgroundGroups: backgroundGroups.filter((g) => usedGroupIds.has(g.id)),
-        rules: selectedRules,
+        rules: selectedRules.map((r) => ({ ...r, enabled: false })),
       },
       'reqforge-rules.json',
     );
