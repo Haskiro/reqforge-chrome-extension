@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch } from '@/store';
 import { getApiErrorMessage, useLazyGetMeQuery, useLoginMutation } from '@/store/api';
-import { setAuthenticated } from '@/store/authSlice';
-import { loadRulesFromServer } from '@/store/rulesSlice';
+import { setAuthenticated } from '@/store/auth-slice';
+import { loadRulesFromServer } from '@/store/rules-slice';
 
 import styles from './login-form.module.css';
 

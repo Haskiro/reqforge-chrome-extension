@@ -7,7 +7,7 @@ import {
   serverGroupToLocal,
   serverRuleToLocal,
   toModificationsPayload,
-} from '@/services/rulesApiMapper';
+} from '@/services/rules-api-mapper';
 import { useAppDispatch, useAppSelector } from '@/store';
 import type { ServerRule } from '@/store/api';
 import {
@@ -26,7 +26,7 @@ import {
   updateRule,
   upsertGroupFromServer,
   upsertRuleFromServer,
-} from '@/store/rulesSlice';
+} from '@/store/rules-slice';
 import { selectAuth, selectRulesState } from '@/store/selectors';
 import type { RuleDirection, RuleModification } from '@/types';
 

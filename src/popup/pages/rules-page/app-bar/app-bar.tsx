@@ -3,7 +3,7 @@ import { Button, message } from 'antd';
 import { useRef, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
-import { importRules, importRulesForServer } from '@/store/rulesSlice';
+import { importRules, importRulesForServer } from '@/store/rules-slice';
 import { selectAuth, selectRulesState } from '@/store/selectors';
 
 import { ExportModal } from '../export-modal';

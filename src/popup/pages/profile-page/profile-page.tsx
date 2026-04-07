@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { getApiErrorMessage, useUpdateMeMutation } from '@/store/api';
-import { updateUser } from '@/store/authSlice';
+import { updateUser } from '@/store/auth-slice';
 import { selectAuth } from '@/store/selectors';
 
 import { ChangePasswordModal } from './change-password-modal';
@@ -67,14 +67,14 @@ export const ProfilePage = () => {
               { max: 100, message: 'Максимум 100 символов' },
             ]}
           >
-            <Input size="large" />
+            <Input />
           </Form.Item>
           <Form.Item
             name="email"
             label="Email"
             rules={[{ required: true, type: 'email', message: 'Введите корректный email' }]}
           >
-            <Input size="large" />
+            <Input />
           </Form.Item>
           <Flex gap={8}>
             <Button onClick={() => setPasswordModalOpen(true)}>Сменить пароль</Button>

@@ -9,8 +9,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { api } from '@/store/api';
-import { logoutUser, saveAuthMode } from '@/store/authSlice';
-import { clearAllRules } from '@/store/rulesSlice';
+import { logoutUser, saveAuthMode } from '@/store/auth-slice';
+import { clearAllRules } from '@/store/rules-slice';
 import { selectAuth, selectRepeatEntryCount, selectTrafficEntryCount } from '@/store/selectors';
 
 import styles from './app-bar.module.css';

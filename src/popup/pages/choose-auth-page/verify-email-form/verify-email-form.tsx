@@ -10,8 +10,8 @@ import {
   useRegisterMutation,
   useSendCodeMutation,
 } from '@/store/api';
-import { setAuthenticated } from '@/store/authSlice';
-import { loadRulesFromServer } from '@/store/rulesSlice';
+import { setAuthenticated } from '@/store/auth-slice';
+import { loadRulesFromServer } from '@/store/rules-slice';
 
 import type { PendingRegisterData } from '../register-form';
 import styles from './verify-email-form.module.css';

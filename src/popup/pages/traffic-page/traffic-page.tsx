@@ -9,9 +9,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { useEntriesChange } from '@/shared/hooks';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addRepeatEntries } from '@/store/repeatSlice';
+import { addRepeatEntries } from '@/store/repeat-slice';
 import { selectTrafficEntries } from '@/store/selectors';
-import { loadTrafficFromStorage, setTrafficEntries } from '@/store/trafficSlice';
+import { loadTrafficFromStorage, setTrafficEntries } from '@/store/traffic-slice';
 import type { StoredEntry } from '@/types';
 
 import { DIRECTION_FILTERS, formatTimestamp, METHOD_FILTERS } from './constants';

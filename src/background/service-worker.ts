@@ -1,7 +1,7 @@
 import type { Rule, StoredEntry } from '@/types';
 
 import type { PopupToWorker, RepeatResponse } from '../shared/messages';
-import { findBackgroundMods, hasInteractiveMatch } from '../shared/ruleMatcher';
+import { findBackgroundMods, hasInteractiveMatch } from '../shared/rule-matcher';
 
 // ── Window management ─────────────────────────────────────────────────────────
 

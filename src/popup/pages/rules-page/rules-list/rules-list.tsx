@@ -14,7 +14,7 @@ import {
   setActiveMode,
   setSelectedRuleId,
   toggleRule,
-} from '@/store/rulesSlice';
+} from '@/store/rules-slice';
 import { selectAuth, selectRulesState } from '@/store/selectors';
 import type { Group, RuleMode } from '@/types';
 

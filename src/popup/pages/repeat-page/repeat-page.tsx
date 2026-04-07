@@ -5,7 +5,7 @@ import { Button, Flex, Layout, Splitter, Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@/store';
-import { removeRepeatEntry, setActiveTabId, setRepeatResponse } from '@/store/repeatSlice';
+import { removeRepeatEntry, setActiveTabId, setRepeatResponse } from '@/store/repeat-slice';
 import {
   selectRepeatActiveTabId,
   selectRepeatEntries,
