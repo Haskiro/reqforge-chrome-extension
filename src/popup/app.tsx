@@ -11,8 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from './store';
-import { loadAuthMode } from './store/authSlice';
-import { loadRulesFromServer, loadRulesFromStorage } from './store/rulesSlice';
+import { loadAuthMode } from './store/auth-slice';
+import { loadRulesFromServer, loadRulesFromStorage } from './store/rules-slice';
 import { selectAuth, selectRulesState } from './store/selectors';
 
 export const App = () => {

@@ -2,13 +2,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import type { TypedUseSelectorHook } from 'react-redux';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { savePersistedRules } from '@/services/rulesStorage';
+import { savePersistedRules } from '@/services/rules-storage';
 
 import { api } from './api';
-import authReducer from './authSlice';
-import repeatReducer from './repeatSlice';
-import rulesReducer from './rulesSlice';
-import trafficReducer from './trafficSlice';
+import authReducer from './auth-slice';
+import repeatReducer from './repeat-slice';
+import rulesReducer from './rules-slice';
+import trafficReducer from './traffic-slice';
 
 export const store = configureStore({
   reducer: {

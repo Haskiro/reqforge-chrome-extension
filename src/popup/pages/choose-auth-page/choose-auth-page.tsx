@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch } from '@/store';
-import { saveAuthMode } from '@/store/authSlice';
+import { saveAuthMode } from '@/store/auth-slice';
 
 import styles from './choose-auth-page.module.css';
 import { ForgotPasswordForm } from './forgot-password-form';

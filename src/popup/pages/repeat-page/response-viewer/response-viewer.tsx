@@ -4,7 +4,7 @@ import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 import { getExtensions } from '@/shared/helpers';
-import type { RepeatResponseState } from '@/store/repeatSlice';
+import type { RepeatResponseState } from '@/store/repeat-slice';
 
 import styles from './response-viewer.module.css';
 

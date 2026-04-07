@@ -5,8 +5,8 @@ import {
   serverGroupToLocal,
   serverRuleToLocal,
   toModificationsPayload,
-} from '@/services/rulesApiMapper';
-import { loadPersistedRules } from '@/services/rulesStorage';
+} from '@/services/rules-api-mapper';
+import { loadPersistedRules } from '@/services/rules-storage';
 import type { ServerGroup, ServerRule } from '@/store/api';
 import type { Group, Rule, RuleMode } from '@/types';
 

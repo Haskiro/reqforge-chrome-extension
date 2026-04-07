@@ -1,5 +1,5 @@
 import type { CreateBackgroundRuleBody, ServerGroup, ServerRule } from '@/store/api';
-import { DEFAULT_BACKGROUND_GROUP_ID, DEFAULT_GROUP_ID } from '@/store/rulesSlice';
+import { DEFAULT_BACKGROUND_GROUP_ID, DEFAULT_GROUP_ID } from '@/store/rules-slice';
 import type { Group, Rule, RuleModification } from '@/types';
 
 export const serverGroupToLocal = (g: ServerGroup): Group => ({ id: String(g.id), name: g.name });
