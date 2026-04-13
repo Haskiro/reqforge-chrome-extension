@@ -43,8 +43,8 @@ export const loadRulesFromServer = createAsyncThunk(
   async (token: string) => {
     const headers = { Authorization: `Bearer ${token}` };
     const [groupsRes, rulesRes] = await Promise.all([
-      fetch('http://localhost:3000/groups', { headers }),
-      fetch('http://localhost:3000/rules', { headers }),
+      fetch(`${import.meta.env.VITE_API_URL as string}/groups`, { headers }),
+      fetch(`${import.meta.env.VITE_API_URL as string}/rules`, { headers }),
     ]);
     const serverGroups = (await groupsRes.json()) as ServerGroup[];
     const serverRules = (await rulesRes.json()) as ServerRule[];
@@ -337,7 +337,7 @@ export const importRulesForServer = createAsyncThunk(
                 ...groupPayload,
               };
 
-        const res = await fetch(`http://localhost:3000${endpoint}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL as string}${endpoint}`, {
           method: 'POST',
           headers,
           body: JSON.stringify(body),

@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# ReqForge — Chrome Extension
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ReqForge — расширение для Google Chrome, предназначенное для перехвата, модификации и повтора HTTP-запросов и ответов прямо в браузере. Полезно при разработке и тестировании веб-приложений: позволяет изменять данные на лету без изменения кода или использования мок серверов.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Возможности
 
-## React Compiler
+### Интерактивная модификация
+Расширение перехватывает запросы или ответы, соответствующие заданным правилам, и останавливает их — предоставляя возможность вручную изменить адрес, заголовки, тело и статус перед отправкой/возвратом. Удобно для точечной отладки конкретных сценариев.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Фоновая модификация
+Правила применяются автоматически без участия пользователя: расширение на лету данные запросов и ответов согласно настроенным модификациям. Подходит для постоянных изменений, которые должны применяться ко всем подходящим запросам.
 
-## Expanding the ESLint configuration
+### Повтор запросов
+Перехваченные запросы можно повторно отправить с любыми изменениями: отредактировать метод, заголовки, тело, адрес и сразу увидеть ответ сервера. Позволяет быстро воспроизводить и исследовать конкретные запросы.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Установка
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Требования
+- Google Chrome версии 88 и выше
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Шаги
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. **Скачайте архив** с последним релизом:
+   [Скачать reqforge-extension.zip](https://github.com/Haskiro/reqforge-chrome-extension/releases/latest/download/reqforge-extension.zip)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. **Распакуйте** архив в любую папку на вашем компьютере.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3. Откройте Chrome и перейдите на страницу расширений:
+   ```
+   chrome://extensions
+   ```
+
+4. Включите **Режим разработчика** (переключатель в правом верхнем углу).
+
+5. Нажмите **«Загрузить распакованное»** и выберите папку `dist`, которая находится внутри распакованного архива.
+
+6. Расширение появится в панели Chrome. Нажмите на его иконку, чтобы открыть.
+
+---
+
+## Использование
+
+При первом запуске потребуется войти в аккаунт или продолжить в гостевом режиме (без сохранения правил на сервере).
+
+После входа доступны разделы:
+- **Правила** — создание и управление правилами модификации
+- **Трафик** — список перехваченных запросов
+- **Повтор** — повторная отправка запросов с редактированием

@@ -25,7 +25,7 @@ export const loadAuthMode = createAsyncThunk<AuthLoadResult>(
     const token = result.authToken as string | undefined;
 
     if (mode === 'authenticated' && token) {
-      const response = await fetch('http://localhost:3000/users/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL as string}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => null);
 
