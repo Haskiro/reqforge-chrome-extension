@@ -7,6 +7,7 @@ import { RepeatPage } from '@pages/repeat-page';
 import { RulesPage } from '@pages/rules-page';
 import { TrafficPage } from '@pages/traffic-page';
 import type { WorkerToPopup } from '@shared/messages';
+import { Spin } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 
@@ -78,7 +79,15 @@ export const App = () => {
     setDebuggerDetached(false);
   };
 
-  if (!authLoaded || !rulesLoaded) return null;
+  if (!authLoaded || !rulesLoaded) {
+    return (
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}
+      >
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   const initialRoute = mode !== null ? '/rules' : '/choose-auth';
 
