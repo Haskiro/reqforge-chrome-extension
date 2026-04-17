@@ -31,9 +31,9 @@ export const serverRuleToLocal = (r: ServerRule): Rule => ({
 export const resolveGroupPayload = (
   groupName: string,
   groups: Group[],
-): { groupId?: number; newGroupName?: string } => {
+): { groupId?: number | null; newGroupName?: string } => {
   const trimmed = groupName?.trim();
-  if (!trimmed) return {};
+  if (!trimmed) return { groupId: null };
   const existing = groups.find(
     (g) => g.name === trimmed && g.id !== DEFAULT_GROUP_ID && g.id !== DEFAULT_BACKGROUND_GROUP_ID,
   );
@@ -42,7 +42,7 @@ export const resolveGroupPayload = (
     (g) =>
       (g.id === DEFAULT_GROUP_ID || g.id === DEFAULT_BACKGROUND_GROUP_ID) && g.name === trimmed,
   );
-  if (isVirtualDefaultName) return {};
+  if (isVirtualDefaultName) return { groupId: null };
   return { newGroupName: trimmed };
 };
 
