@@ -50,7 +50,7 @@ export type CreateStoppingRuleBody = {
   value: string;
   ruleType: 'CONTAINS' | 'EQUALS' | 'REGEX';
   direction?: 'REQUEST' | 'RESPONSE' | 'ANY';
-  groupId?: number;
+  groupId?: number | null;
   newGroupName?: string;
 };
 
@@ -66,7 +66,7 @@ export type CreateBackgroundRuleBody = {
     value: string;
     bodyLanguage?: BodyLanguage;
   }[];
-  groupId?: number;
+  groupId?: number | null;
   newGroupName?: string;
 };
 

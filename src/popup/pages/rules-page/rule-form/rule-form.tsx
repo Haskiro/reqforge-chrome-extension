@@ -167,7 +167,7 @@ export const RuleForm = () => {
     if (selectedRule) {
       dispatch(updateRule({ ...selectedRule, ...values, groupId, modifications }));
     } else {
-      dispatch(addRule({ ...values, groupId, enabled: true, mode: activeMode, modifications }));
+      dispatch(addRule({ ...values, groupId, enabled: false, mode: activeMode, modifications }));
     }
     dispatch(setSelectedRuleId(null));
     resetForm();

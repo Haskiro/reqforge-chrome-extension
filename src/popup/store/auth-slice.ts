@@ -52,7 +52,7 @@ export const loadAuthMode = createAsyncThunk<AuthLoadResult>(
 
 export const saveAuthMode = createAsyncThunk('auth/save', async (mode: AuthMode) => {
   if (mode === null) {
-    await chrome.storage.local.remove('authMode');
+    await chrome.storage.local.remove(['authMode', 'rulesState']);
   } else {
     await chrome.storage.local.set({ authMode: mode });
   }
@@ -60,7 +60,7 @@ export const saveAuthMode = createAsyncThunk('auth/save', async (mode: AuthMode)
 });
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
-  await chrome.storage.local.remove(['authMode', 'authToken']);
+  await chrome.storage.local.remove(['authMode', 'authToken', 'rulesState']);
 });
 
 interface AuthState {
